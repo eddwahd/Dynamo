@@ -1,9 +1,9 @@
-function ret = get_current_controls(subspace_mask)
+function ret = controls_get(control_mask)
 global OC;
 
-if nargin==0
-    ret = OC.timeSlots.currPoint.controls;
+if nargin == 0
+    ret = OC.seq.raw_controls;
 else
-    ret = OC.timeSlots.currPoint.controls(subspace_mask);
+    ret = OC.seq.raw_controls(control_mask);
 end
 

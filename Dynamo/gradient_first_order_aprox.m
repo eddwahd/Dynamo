@@ -1,29 +1,44 @@
-function [value_at_point, gradient] = gradient_first_order_aprox (subspace_mask)
-% Gradient by finite difference method: f'(x) = (f(x+eps) - f(x))/eps (trivial and relatively slow, but a good reference point)
+function [grad] = gradient_first_order_aprox (control_mask)
+% Gradient of auxiliary function g by first order approximation.
+
+% dP_k/d_u \approx (-B_u * dt_k) * P_k
+% Exact if G_k commutes with B_u.
 
 global OC;
 
-gradient = NaN(size(subspace_mask));
-
 % Mask which Hs, Us, & Ls we need for this calculation
-% (it's more efficient to do so before we ask for the current_value, since then get_current_value's call to recompute_timeslots_now
-% will be most efficient as it knows of all calculations needed at one, and not piece-meal).
-for t=1:size(subspace_mask,1)
-    OC.timeSlots.currPoint.H_needed_now(t) = true;
-    if any(subspace_mask(t,:))
-        OC.timeSlots.currPoint.U_needed_now(t+1) = true;
-        OC.timeSlots.currPoint.L_needed_now(t+1) = true;
-    end
-end
+% (it's more efficient to do so before we ask for the current_value, since then get_current_value's call to cache_refresh
+% will be most efficient as it knows of all calculations needed at once, and not piece-meal).
 
-value_at_point = get_current_value_Phi0_norm(); % Important: Gradient functions live in the Phi0 space. Wrappers take care of conversion to SU/PSU
-recompute_timeslots_now();
+slot_mask = any(control_mask, 2);
+OC.cache.H_needed_now(slot_mask) = true; % H_{slot}
+OC.cache.U_needed_now([false; slot_mask]) = true;  % U_{slot+1}
+OC.cache.L_needed_now([false; slot_mask]) = true;  % L_{slot+1}
+cache_refresh();
 
-for t=1:size(subspace_mask,1)
-    for ctrl = 1:size(subspace_mask,2)
-        if subspace_mask(t,ctrl)
-            gradient(t,ctrl) = Phi0_norm(OC.timeSlots.currPoint.L{t+1} * (-1i * OC.timeSlots.tau(t) * OC.config.hamControl{ctrl}) * OC.timeSlots.currPoint.U{t+1});
+% tau as last column of controls
+tau_c = size(control_mask, 2);
+
+grad = zeros(nnz(control_mask), 1);
+[Ts, Cs] = ind2sub(size(control_mask), find(control_mask));
+for z = 1:length(Ts)
+    t = Ts(z);
+    c = Cs(z);
+    
+    temp = abs(OC.seq.tau(t)) * norm(OC.cache.H{t});
+    if temp > 1
+        fprintf('warning: gradient approximation not valid at t = %d, c = %d: temp = %f.\n', t, c, temp)
+    
+        if temp > 1e2
+            error('damn it')
         end
     end
+
+    if c == tau_c
+        temp = -OC.seq.tau_deriv(t) * trace_matmul(OC.cache.L{t+1}, OC.cache.H{t} * OC.cache.U{t+1});
+    else
+        temp = -OC.seq.tau(t) * OC.seq.control_deriv(t, c) * trace_matmul(OC.cache.L{t+1}, OC.system.B{c} * OC.cache.U{t+1});
+    end
+    grad(z) = temp;
 end
-gradient = filter_by_subspace_mask (gradient, subspace_mask);
+

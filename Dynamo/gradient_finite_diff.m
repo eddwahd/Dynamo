@@ -1,33 +1,46 @@
-function [value_at_point, gradient] = gradient_finite_diff (subspace_mask, epsilon)
-% Gradient by finite difference method: f'(x) = (f(x+eps) - f(x))/eps (trivial and relatively slow, but a good reference point)
+function [grad] = gradient_finite_diff(control_mask, g, epsilon)
+% Gradient of the auxiliary function g by finite difference method.
+%
+% g'(x) = (g(x + eps) - g(x))/eps
+% Trivial and relatively slow, but a good reference point.
 
 global OC;
 
-gradient = NaN(size(subspace_mask));
 
 % Mask which Hs, Us, & Ls we need for this calculation
-% (it's more efficient to do so before we ask for the current_value, since then get_current_value's call to recompute_timeslots_now
-% will be most efficient as it knows of all calculations needed at one, and not piece-meal).
-for t=1:size(subspace_mask,1)
-    OC.timeSlots.currPoint.H_needed_now(t) = true;
-    if any(subspace_mask(t,:))
-        OC.timeSlots.currPoint.U_needed_now(t) = true;
-        OC.timeSlots.currPoint.L_needed_now(t+1) = true;
+% (it's more efficient to do so before we ask for the current_value, since then get_current_value's call to cache_refresh
+% will be most efficient as it knows of all calculations needed at once, and not piece-meal).
+
+slot_mask = any(control_mask, 2);
+OC.cache.H_needed_now(slot_mask) = true;
+OC.cache.U_needed_now([slot_mask; false]) = true;  % U_{slot}
+OC.cache.L_needed_now([false; slot_mask]) = true;  % L_{slot+1}
+cache_refresh();
+
+% tau as last column of controls
+tau_c = size(control_mask, 2);
+
+grad = zeros(nnz(control_mask), 1);
+[Ts, Cs] = ind2sub(size(control_mask), find(control_mask));
+for z = 1:length(Ts)
+    t = Ts(z);
+    c = Cs(z);
+
+    if c == tau_c
+        tau_eps = OC.seq.tau(t) +OC.seq.tau_deriv(t) * epsilon;
+        P_epsilon = OC.config.expmFunc(-tau_eps * OC.cache.H{t});        
+    else
+        H_eps = OC.cache.H{t} +(epsilon * OC.seq.control_deriv(t, c)) * OC.system.B{c};
+        P_epsilon = OC.config.expmFunc(-OC.seq.tau(t) * H_eps);
     end
+
+    g_at_eps_point = trace_matmul(OC.cache.L{t+1}, P_epsilon * OC.cache.U{t});
+    % U is taken at time (t-1)dT. P_eps takes us forward dT, and LDagger continues from time t dT.
+    temp = (g_at_eps_point - g) / epsilon;
+
+    grad(z) = temp;
 end
 
-value_at_point = get_current_value_Phi0_norm(); % Important: Gradient functions live in the Phi0 space. Wrappers take care of conversion to SU/PSU
-recompute_timeslots_now();
 
-for t=1:size(subspace_mask,1)
-    for ctrl = 1:size(subspace_mask,2)
-        if subspace_mask(t,ctrl)
-            Heps = OC.timeSlots.currPoint.H{t} + epsilon * OC.config.hamControl{ctrl};
-            P_epsilon = OC.timeSlots.expmFunc(- 1i * Heps * OC.timeSlots.tau(t));
-            value_at_eps_point = Phi0_norm(P_epsilon * OC.timeSlots.currPoint.U{t}, OC.timeSlots.currPoint.L{t+1});
-            % U is taken at time (t-1)dT. P_eps takes us forward dT, and LDagger continues from time t dT.
-            gradient(t,ctrl) = (value_at_eps_point - value_at_point) / epsilon;
-        end
-    end
-end
-gradient = filter_by_subspace_mask (gradient, subspace_mask);
+
+

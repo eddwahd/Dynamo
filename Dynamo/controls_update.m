@@ -1,36 +1,39 @@
-function update_timeslot_controls (new_control_values, subspace_mask)
-% update_timeslot_controls (new_control_values, subspace_mask)
-%       new_control_values - Control value matrix, 
-% update_timeslot_controls will set the new control values (the values in new_control_values for which subspace_mask is true)
+function controls_update(x, control_mask)
+% controls_update  Updates selected controls.
 %
+%  x: vector of control values, control_mask: corresponding mask.
+%
+%  Updates control values for which control_mask is true.
+%  Makes the changed timeslots and stuff that depends on them stale.
+
 global OC;
 
 if nargin == 1
-    subspace_mask = true(size(OC.timeSlots.currPoint.controls));
-else % We have a real subspace mask. Embed new values in existing parameter space
-    ncv = OC.timeSlots.currPoint.controls;
-    ncv(subspace_mask) = new_control_values;
-    new_control_values = ncv;
+    control_mask = true(size(OC.seq.raw_controls)); % full mask
 end
 
+% make a trial copy of the new controls
+new_controls = OC.seq.raw_controls;
+new_controls(control_mask) = x;
 
-old_controls = OC.timeSlots.currPoint.controls;
-old_controls(~subspace_mask) = 0;
-new_controls = old_controls;
-new_controls(subspace_mask) = new_control_values(subspace_mask);
+% see which timeslots have changed
+changed_t_mask = any(new_controls ~= OC.seq.raw_controls, 2);
 
-changed_t_mask = any(new_controls ~= old_controls,2);
-
-if ~isempty(changed_t_mask)
-    OC.timeSlots.currPoint.H_is_stale(changed_t_mask) = true;
-    OC.timeSlots.currPoint.P_is_stale(changed_t_mask) = true;
-    OC.timeSlots.currPoint.controls(subspace_mask) = new_control_values(subspace_mask);
+if any(changed_t_mask)
+    % actually update the controls
+    OC.seq.raw_controls = new_controls;
+    
+    OC.cache.H_is_stale(changed_t_mask) = true;
+    OC.cache.P_is_stale(changed_t_mask) = true;
     
     % Propagate the H_is_stale to the U and Ls.
-    OC.timeSlots.currPoint.U_is_stale( (find(OC.timeSlots.currPoint.H_is_stale, 1, 'first')+1):end) = true;
-    OC.timeSlots.currPoint.L_is_stale(1:find(OC.timeSlots.currPoint.H_is_stale, 1, 'last'))         = true;
+    OC.cache.U_is_stale( (find(OC.cache.H_is_stale, 1, 'first')+1):end) = true;
+    OC.cache.L_is_stale(1:find(OC.cache.H_is_stale, 1, 'last'))         = true;
     
-    OC.timeSlots.currPoint.curr_Phi0_val_stale = true;
-    OC.timeSlots.currPoint.curr_Phi0_val = NaN;
+    OC.cache.g_is_stale = true;
+    OC.cache.g = NaN;
+
+    % transform the controls
+    [OC.seq.tau, OC.seq.tau_deriv, OC.seq.control, OC.seq.control_deriv] = controls_transform(OC.seq.raw_controls);
 end
 

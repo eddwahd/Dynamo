@@ -2,5 +2,5 @@ function calcPfromH_expm(t)
 
 global OC;
 
-OC.timeSlots.currPoint.P{t} = OC.timeSlots.expmFunc(- 1i * OC.timeSlots.tau(t) * OC.timeSlots.currPoint.H{t});
+OC.cache.P{t} = OC.config.expmFunc(-OC.seq.tau(t) * OC.cache.H{t});
 

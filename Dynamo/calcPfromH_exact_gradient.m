@@ -1,11 +1,10 @@
 function calcPfromH_exact_gradient(t)
-global OC;
-% Computed once per O.hamTotal{t}, i.e. once per time slot, for a specific settings of all controls for that slot
+% Computed once per OC.cache.H{t}, i.e. once per time slot, for a specific settings of all controls for that slot
 %
-%                      if eigVal(j) <> eigVal(k):  (exp(eigVal(k)) - exp(eigVal(j)))/(eigVal(k)-eigVal(j))
-% factorMat(j,k) =
-%                      if eigVal(j) <> eigVal(k):   exp(eigVal(k))
-% The coefficient for <v(j) | H | v(k)> is -1i * dT * factorMat(j,k)
+%                     lambda(j) ~= lambda(k):  (exp(lambda(k)) - exp(lambda(j)))/(lambda(k)-lambda(j))
+% grad_factor(j,k) =
+%                     lambda(j) == lambda(k):   exp(lambda(k))
+% The coefficient for <v(j) | H | v(k)> is -dT * grad_factor(j,k)
 %
 % References: 
 %     [1] arXiv 1011.4874 (http://arxiv.org/abs/1011.4874)
@@ -13,31 +12,35 @@ global OC;
 %     [3] K. Aizu, J. Math. Phys. 4, 762 (1963)
 %     [4] R. M. Wilcox, J. Math. Phys. 8, 962 (1967)
 
-minus_i_dt_H = -1i * OC.timeSlots.tau(t) * OC.timeSlots.currPoint.H{t};
+global OC;
 
-N = length(minus_i_dt_H);
+minus_dt_H = -OC.seq.tau(t) * OC.cache.H{t};
 
-[eigVec, eigVal] = eig(minus_i_dt_H);
-eigVal = reshape(diag(eigVal),[N,1]);
-eigValExp = exp(eigVal);
+N = length(minus_dt_H);
 
-eigVal_row_mat  = eigVal*ones(1,N);
-eigVal_diff_mat = eigVal_row_mat - transpose(eigVal_row_mat); % eigVal_diff_mat(j,k) = eigVal(j) - eigVal(k)
+%% Compute the eigenvalue factors and eigenvectors of -dt*H
 
-eigValExp_row_mat = eigValExp*ones(1,N);
-eigValExp_diff_mat = eigValExp_row_mat - transpose(eigValExp_row_mat); % eigValExp_diff_mat(j,k) = exp(eigVal(j)) - exp(eigVal(k))
+[v, lambda] = eig(minus_dt_H);
+lambda = diag(lambda);  % note that the eigenvalues include -dt
+lambdaExp = exp(lambda);
 
-degenerate_mask = abs(eigVal_diff_mat) < 1e-10;
-eigVal_diff_mat(degenerate_mask) = 1; % To prevent division by zero in next step
+lambda_row_mat  = lambda * ones(1,N);
+lambda_diff = lambda_row_mat - lambda_row_mat.'; % lambda_diff(j,k) = lambda(j) - lambda(k)
 
-factorMat = eigValExp_diff_mat ./ eigVal_diff_mat; % factorMat(j,k) = (exp(eigVal(j)) - exp(eigVal(k)))/(eigVal(j)-eigVal(k))
-eigValExp_row_mat = eigValExp*ones(1,N);
-factorMat(degenerate_mask) = eigValExp_row_mat(degenerate_mask); % For degenerate eigenvalues, the factor is just the exponent
+lambdaExp_row_mat = lambdaExp*ones(1,N);
+lambdaExp_diff = lambdaExp_row_mat - lambdaExp_row_mat.'; % lambdaExp_diff(j,k) = exp(lambda(j)) - exp(lambda(k))
 
-% factorMat = transpose(factorMat);
+degenerate_mask = abs(lambda_diff) < 1e-10;
+lambda_diff(degenerate_mask) = 1; % To prevent division by zero in next step
 
-OC.timeSlots.currPoint.H_eigVal{t} = eigVal;
-OC.timeSlots.currPoint.H_eigVec{t} = eigVec;
-OC.timeSlots.currPoint.H_factorMat{t} = factorMat;
+eig_factor = lambdaExp_diff ./ lambda_diff; % eig_factor(j,k) = (exp(lambda(j)) - exp(lambda(k)))/(lambda(j)-lambda(k))
+eig_factor(degenerate_mask) = lambdaExp_row_mat(degenerate_mask); % For degenerate eigenvalues, the factor is just the exponent
 
-OC.timeSlots.currPoint.P{t} = eigVec * diag(eigValExp) * eigVec';
+
+OC.cache.H_v{t} = v;
+OC.cache.H_eig_factor{t} = eig_factor;
+
+
+%% And finally expm(-dt*H) using the eigendecomposition
+
+OC.cache.P{t} = v * diag(lambdaExp) * v';

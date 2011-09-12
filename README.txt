@@ -1,6 +1,6 @@
-DYNAMO - Quantum Dynamic Optimization Package v1.0
+DYNAMO - Quantum Dynamic Optimization Package v1.3 alpha
 
-(c) Shai Machnes 2010, 
+(c) Shai Machnes et al. 2010-2011, 
 Institute of Theoretical Physics, 
 Ulm University, 
 Germany
@@ -15,17 +15,17 @@ For the latest version of this software, guides and information, visit http://ww
 
 The best way to understand DYNAMO is review the demos.            
 
-Before running the demos, please make sure the 'Dynamo' directory is in MATLAB's search path by entering the following command
+Before running the demos, please make sure the Dynamo directories are in MATLAB's search path by entering the following command
 
-    addpath('Dynamo'); % Replace 'Dynamo' with the name of the directory where Dynamo files (such as 'BFGS_search_function.m') reside.
+    addpath('Dynamo', 'utils');
 
-What are the demos ?
+What are the demos?
 
     run_me_dynamo_demo_00           Using DYNAMO to solve a simple gate-synthesis problem. 
                                     If your interests are focused on finding optimal control sequences for your specific system - this file is all you need to understand.
     run_me_dynamo_demo_01           This demo will optimize a simple two-qubit QFT gate generation problem using a wide variety of algorithms
                                     If you are interested in OC algorithm research, this is the place for you
 
-To understand a bit more about the inner-workings of DYNAMO, please read INTRO_TO_DYNAMO.txt
+To understand a bit more about the inner workings of DYNAMO, please read INTRO_TO_DYNAMO.txt
 
 

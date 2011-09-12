@@ -1,10 +1,15 @@
-function v = SU_norm(varargin)
+function [Q, grad_Q] = Q_real(control_mask)
+% Nonprojective goal function and gradient.
+%
+% If no control_mask is given, computes just the goal function.
+% Otherwise also gives the corresponding gradient.
+
 global OC;
 
-if (nargin==1) && isscalar(varargin{1})     % Input is already the Phi0 norm
-    v = varargin{1}; 
-else                                        % Input are the data needed to compute the Phi0 norm
-    v = Phi0_norm(varargin{:});
+if nargin == 1
+    grad_g = OC.config.gradientFunc(control_mask);    
+
+    grad_Q = real(grad_g) / OC.system.norm2;
 end
 
-v = real(v) / OC.config.normNorm;
+Q = real(g_func()) / OC.system.norm2;
