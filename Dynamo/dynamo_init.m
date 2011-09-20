@@ -54,6 +54,12 @@ OC.config.expmFunc = @expm;
 % We use the Hilbert-Schmidt inner product (and the induced
 % Frobenius norm) throughout the code.
 
+% TODO temporary fix: sparse to full
+H_drift = full(H_drift);
+for k=1:n_controls
+    H_ctrl{k} = full(H_ctrl{k});
+end
+
 switch task
   case {'task1', 'task2', 'task3'}
     fprintf('Optimize a control sequence to obtain the given ')

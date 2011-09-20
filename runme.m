@@ -10,8 +10,18 @@ end
 randseed(seed); % Optional. Allows the same pseudo-random initial controls to be generated on every run (helpful for debugging purposes, for example)
 
 
+% All definitions are in a global variable called OC
+global OC; % and now we can access it too
+
+
 %% Define the physics of the problem
 
+
+if true
+    [timeslots, T] = test_suite(20);
+    squared_controls = false(1, length(OC.system.B));
+else
+    
 n_spins = 2;
 dim = 2^n_spins;
 
@@ -43,7 +53,7 @@ squared_controls = logical([0, 0, 0, 0]);
 
 % noise/dissipation
 % FIXME NOTE the minus sign (different convention)
-%L_drift = -0.002 * superop_lindblad(depolarize1);
+L_drift = -0.002 * superop_lindblad(depolarize1);
 
 initial = eye(dim);
 final = qft(n_spins);
@@ -57,17 +67,16 @@ final = qft(n_spins);
 %dynamo_init('task5', initial, final, H_drift, H_ctrl, L_drift)
 dynamo_init('task1', initial, final, H_drift, H_ctrl)
 
+T = 6 * (n_spins-1) / 1; % How much time do we have to drive the system? The value specified here has empirically been shown to work well
+timeslots = 20
+end
 
 %% Optimization options
 
-% All definitions are in a global variable called OC
-global OC; % and now we can access it too
 
 if 1
     % Time-slot configuration. Can also be a vector of delta t:s.
-    T = 6 * (n_spins-1) / 1; % How much time do we have to drive the system? The value specified here has empirically been shown to work well
-    timeslots = 100
-    normal_controls = [timeslots, length(H_ctrl)];
+    normal_controls = [timeslots, length(OC.system.B)];
     t_controls = [timeslots, 1];
 
     % Generate random initial controls
