@@ -8,7 +8,7 @@ function dynamo_init(task, initial, final, H_drift, H_ctrl, L_drift)
 % TODO separate init of orthogonal blocks: task, system, initial/final?
 
 % Dynamo version
-version = '1.3 alpha7';
+version = '1.3 alpha8';
 
 % All definitions are in a global variable called OC
 global OC; % and now we can access it too
@@ -46,6 +46,7 @@ OC.config.task = task;
 
 
 n_controls = length(H_ctrl);
+OC.system.A = [];
 OC.system.B = cell(1, n_controls);
 OC.system.B_is_superop = false(1, n_controls);
 

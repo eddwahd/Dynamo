@@ -20,6 +20,8 @@ if n_controls ~= length(OC.system.B)
     error('Number of control Hamiltonians does not match the number of controls given.')
 end
 
+fprintf('Timeslots: %d\nControls: %d\n', n_timeslots, n_controls);
+
 
 %% Check the validity of the parameters. This code needs to change when controls_transform changes.
 

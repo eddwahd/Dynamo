@@ -1,4 +1,4 @@
-function [slots, T] = test_suite(p)
+function test_suite(p)
 % Implementation of the test cases from the paper
 % S. Machnes et al., arXiv:1011.4874
 % Ville Bergholm 2011
@@ -97,11 +97,11 @@ switch p
 
   case {22, 23}
     if (p == 22)
-        d = 13
+        d = 13;
     else
         d = 7;
     end
-    fprintf('Spin-%g chain, Jz/Jx control.\n', (d-1)/2)
+    fprintf('A single spin-%g, Jz/Jx control.\n', (d-1)/2)
     J = angular_momentum(d);
     H = J{3}^2;
     C{1} = J{3};
@@ -111,7 +111,7 @@ switch p
   otherwise
     error('Unknown problem.');
 end
-fprintf('\n\n')
+fprintf('\n')
 initial = eye(size(final));
 
 dynamo_init('task1', initial, final, H, C);
@@ -119,15 +119,31 @@ dynamo_init('task1', initial, final, H, C);
 
 %% Optimization options
 
-slots = [30, 40, 128, 64, 120, 140, 128, 128, 64, 300, 300, 64,...
-         128, 128, 40, 64, 1000, 1000, 300, 64, 128, 100, 50];
+timeslots = [30, 40, 128, 64, 120, 140, 128, 128, 64, 300, 300, 64,...
+             128, 128, 40, 64, 1000, 1000, 300, 64, 128, 100, 50];
 T = [2, 2, 3, 4, 6, 7, 10, 12, 20, 15, 20, 25,...
      7, 12, 2, 5, 125, 150, 30, 15, 40, 15, 5];
 
-slots = slots(p);
+timeslots = timeslots(p);
 T = T(p);
 
 
+% Timeslot configuration.
+normal_controls = [timeslots, length(C)];
+t_controls = [timeslots, 1];
+
+% Generate random initial controls
+initial_controls = 0.2 * (rand(normal_controls) - 0.5);
+
+% fixed tau
+tau_par = [T, 0];
+tau_c = zeros(t_controls);
+control_mask = [true(normal_controls), false(t_controls)];
+
+initial_controls = [initial_controls, tau_c];
+    
+dynamo_init_controls(initial_controls, tau_par);
+dynamo_init_opt(control_mask);
 
 
 function [H] = ising(n, J)

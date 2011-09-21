@@ -18,8 +18,7 @@ global OC; % and now we can access it too
 
 
 if true
-    [timeslots, T] = test_suite(20);
-    squared_controls = false(1, length(OC.system.B));
+    test_suite(23);
 else
     
 n_spins = 2;
@@ -67,14 +66,14 @@ final = qft(n_spins);
 %dynamo_init('task5', initial, final, H_drift, H_ctrl, L_drift)
 dynamo_init('task1', initial, final, H_drift, H_ctrl)
 
-T = 6 * (n_spins-1) / 1; % How much time do we have to drive the system? The value specified here has empirically been shown to work well
-timeslots = 20
-end
 
 %% Optimization options
 
 
 if 1
+    T = 6 * (n_spins-1) / 1; % How much time do we have to drive the system? The value specified here has empirically been shown to work well
+    timeslots = 20
+    
     % Time-slot configuration. Can also be a vector of delta t:s.
     normal_controls = [timeslots, length(OC.system.B)];
     t_controls = [timeslots, 1];
@@ -101,17 +100,14 @@ if 1
 
 else
     % reuse the previous, optimized controls
-    %OC.seq.par = [0.25 * T, 0.75 * T];
-    
     dynamo_init_controls(OC.seq.raw_controls, OC.seq.par, OC.seq.squared);
 
     % Which time slots do you want to modify ? All of them
     control_mask = true(size(OC.seq.raw_controls));
 end
 
-
 dynamo_init_opt(control_mask);
-
+end
 
 %% Now do the actual search
 
