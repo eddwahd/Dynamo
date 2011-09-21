@@ -1,0 +1,349 @@
+\documentclass[aps, pra, a4paper]{revtex4}
+
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[australian]{babel}
+\usepackage{graphicx, hyperref, amsmath, amssymb, verbatim}
+
+\newcommand{\I}{I}
+\newcommand{\be}{\begin{equation}}
+\newcommand{\ee}{\end{equation}}
+\newcommand{\eq}{\Leftrightarrow}
+
+\newcommand{\ket}[1]{\left| #1 \right \rangle}
+\newcommand{\bra}[1]{\left \langle #1 \right|}
+\newcommand{\braket}[2]{\left \langle #1 | #2 \right \rangle}
+\newcommand{\ketbra}[2]{\left| #1 \right \rangle \left \langle #2 \right|}
+
+
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\re}{Re}
+
+\newcommand{\dd}[2]{\frac{\mathrm{d} #1}{\mathrm{d} #2}}
+
+\begin{document}
+
+
+\section{Basics}
+
+\subsection{System}
+
+Governing equation:
+\be
+\dot{X} = -\underbrace{(A(t) +\sum_k u_k(t) B_k)}_{G(t)} X(t) = -G(t) X(t),
+\ee
+where $u_k$ are the (scalar) control fields, $B_k$ the corresponding generators,
+$A$ the drift generator, $X(t)$ the ``system'' (vector or operator), and $G(t)$ the total generator.
+
+Assume that the controls are
+piecewise constant in time: $u_{c,j}$, with $n$~time slices in total,
+and the duration of the $k$th slice is~$\tau_k$, such that
+\be
+t_k = t_0 + \sum_{j=1}^{k} \tau_j.
+\ee
+For each time slice we now get the propagator
+\be
+P_k := \exp(-G_k \tau_k),
+\ee
+with
+\be
+X_k := X(t_k) = \prod_{j=1}^{k} P_j X(t_0).
+\ee
+NOTE that this propagator always acts on the system by multiplication from the left. In Task 4 we make an exception on this rule.
+
+
+System and adjoint system propagators:
+\begin{align}
+U_k &:= P_k \cdots P_1,\\      % U_k X_0 = X_k
+\Lambda_k &:= P_n \cdots P_{k+1}.
+\end{align}
+NOTE: currently the code uses a different definition:
+$U_{k+1} = P_k \cdots P_1 X_0 = X_k$ and
+$\Lambda_k = X_f^\dagger P_n \cdots P_k$ (MATLAB indexing limitations...).
+
+\begin{table}[h]
+\[
+\begin{array}{c}
+\begin{array}{@{t_0}p{1.9em}@{t_1}p{1.8em}@{t_2}p{1.4em}@{t_{k-1}}p{1.1em}@{t_{k}}p{1.1em}@{t_{k+1}}p{0.8em}@{t_{n-2}}p{0.8em}@{t_{n-1}}p{1.3em}@{t_n}}
+& & & & & & &
+\end{array}\\
+\begin{array}{|p{2em}|p{2em}|p{2em}|p{2em}|p{2em}|p{2em}|p{2em}|p{2em}|}
+ $\tau_1$ & $\tau_2$ & & $\tau_k$ & $\tau_{k+1}$ & & $\tau_{n-1}$ & $\tau_n$ \\
+% $u_{c,1}$ & $u_{c,2}$ & & $u_{c,k}$ & $u_{c,k+1}$ & & $u_{c,n-1}$ & $u_{c,n}$ \\
+ $P_1$ & $P_2$ & $\cdots$ & $P_k$ & $P_{k+1}$ & $\cdots$ & $P_{n-1}$ & $P_n$ \\
+\cline{1-4}
+& & & $U_{k}$ & $\Lambda_{k}$ & & & \\
+\cline{5-8}
+\end{array}
+\end{array}
+\]
+\caption{Time slices and operators related to them.
+$t_k = t_0 + \sum_{j=1}^{k} \tau_j$.
+The total forward and backward
+propagators to the point $t_k$ are defined as
+$U_k = P_k \cdots P_1$ and
+$\Lambda_k = P_{n} \cdots P_{k+1}$.}
+\end{table}
+
+
+
+\subsection{Optimization goal}
+
+We usually wish to minimize an operator/vector distance, measured using the Frobenius norm:
+\be
+d(A, B)^2 = |A-B|^2 = \tr((A-B)^\dagger (A-B))
+= |A|^2 +|B|^2 -\tr(A^\dagger B) -\tr(B^\dagger A)
+= |A|^2 +|B|^2 -2 \re \tr(A^\dagger B)
+\ee
+
+Normalize with $|A|^2$ (assumed fixed, known):
+\be
+\frac{d^2(A, B)}{|A|^2}
+= 1 +\frac{|B|^2}{|A|^2} -\frac{2}{|A|^2} \re \tr(A^\dagger B)
+\ee
+
+Define normalized fidelity\footnote{There is another widely used quantity called fidelity in quantum information science which is different from the present one.}
+(real function):
+\be
+f(A, B) := \frac{1}{|A|^2} \re \tr(A^\dagger B).
+\ee
+Clearly $f(A, A) = 1$. Now
+\be
+\frac{d^2(A, B)}{|A|^2} = 1 +\frac{|B|^2}{|A|^2} -2 f(A, B)
+\ee
+and
+\be
+d^2(A, B) \ge 0
+\qquad \eq \qquad
+f(A, B) \le \frac{1}{2} \left(1 +\frac{|B|^2}{|A|^2} \right).
+\ee
+
+
+
+(X1): Is minimum distance equivalent to maximum fidelity?
+If this holds, we may optimize fidelity instead of distance.
+If $|A|^2 = C_A$ and $|B|^2 = C_B$ are constant, we have
+\be
+d(A, B)^2 / C_A = 1 +C_B/C_A - 2 f(A, B)
+\ee
+$\implies$ (X1) holds.
+For a unitary operator~$U$ this is always the case:
+\be
+|U|^2 = \tr(U^\dagger U) = \tr(\I) = N.
+\ee
+
+
+\subsection{Auxiliary function g}
+
+Define
+\be
+g(A, B) := \frac{1}{|A|^2} \tr(A^\dagger B).
+\ee
+
+We will encounter two common quality functions to be maximized:
+\begin{align}
+f(A,B) &:= \re g(A,B), \: \text{and}\\
+Q(A,B) &:= |g(A,B)|.
+\end{align}
+
+Limits:
+\begin{align}
+|f(A, B)| &\le \frac{1}{2} \left(1 +\frac{|B|^2}{|A|^2} \right),\\
+0 &\le Q^2(A,B) \le \frac{1}{2} \left(1 +\frac{|B|^4}{|A|^4} \right).
+\end{align}
+(The upper limit for $Q$ is obtained using the lifting trick in Task 1.)
+Gradients:
+\begin{align}
+\dd{f(A,B)}{u}
+&= \re \left( \dd{g}{u} \right) \\
+\dd{Q(A,B)}{u}
+%= \dd{|g(X_f, X_n)|}{u_k(t_j)}
+&= \re \left(\frac{g^*}{|g|} \dd{g}{u} \right).
+\end{align}
+
+
+
+\section{Optimization tasks}
+
+\subsection{Task 1}
+
+Unitary operator $X$ up to phase, unitary propagation.
+
+We can get rid of phase by lifting the problem into Liouville space:
+$\hat{U} := U^* \otimes U$.
+We then have for any~$A$, $B$
+\be
+\tr(\hat{A}^\dagger \hat{B})
+= \tr((A^* \otimes A)^\dagger (B^* \otimes B))
+= \tr((A^T B^*) \otimes (A^\dagger B))
+= \tr((A^\dagger B)^* \otimes (A^\dagger B))
+= |\tr(A^\dagger B)|^2,
+\ee
+and thus
+\be
+|\hat{A}|^2 = \tr(\hat{A}^\dagger \hat{A})
+= |\tr(A^\dagger A)|^2
+= |A|^4.
+\ee
+Hence for a unitary~$U$ we have
+$|\hat{U}|^2 = |U|^4 = N^2$.
+
+Minimize operator distance $d(\hat{X}_{f}, \hat{X}_n)$:
+\be
+\frac{d^2(\hat{X}_f, \hat{X}_n)}{|\hat{X}_f|^2} 
+= 1 +\frac{|\hat{X}_n|^2}{|\hat{X}_f|^2} -2 f(\hat{X}_f, \hat{X}_n)
+= 2 -2 f(\hat{X}_f, \hat{X}_n)
+%= 2 -\frac{2}{N^2} (\re) |\tr(A^\dagger B)|^2
+\ee
+(X1) holds, and
+the problem actually simplifies back into Hilbert space, but with an extra abs value squared:
+\be
+f(\hat{X}_f, \hat{X}_n)
+= \frac{1}{N^2} (\re) |\tr(X_f^\dagger X_n)|^2
+= Q^2(X_f, X_n).
+\ee
+Now, maximize $0 \le Q(X_f, X_n) \le 1$.
+
+
+\subsection{Task 2}
+
+Unitary operator $X$, phase matters, unitary propagation.
+Minimize operator distance $d(X_f, X_n)$.
+
+For a unitary operator~$U$,
+$|U|^2 = N$, hence (X1) holds, and we can equivalently maximize the fidelity
+$-1 \le f(X_f, X_n) \le 1$.
+
+
+\subsection{Task 3}
+
+Pure normalized state vector X, unitary propagation.
+$|A|^2 = \braket{A}{A} = 1$.
+Maximize state overlap
+\be
+|\braket{X_f}{X_n}|
+= |(\tr)(X_f^\dagger X_n)|
+= Q(X_f, X_n),
+\ee
+$0 \le Q(X_f, X_n) \le 1$.
+
+
+If global phase matters, minimize $d(X_f, X_n)$, and since (X1) holds,
+maximize the fidelity:
+$-1 \le f(X_f, X_n) \le 1$.
+
+
+
+\subsection{Task 4}
+
+General state operator X, unitary propagation.
+Minimize state operator distance $d(X_f, X_n)$.
+
+\be
+|\rho|^2
+= \tr(\rho^\dagger \rho)
+= \tr(\rho^2)
+= P(\rho)
+\ee
+Unitary propagation conserves purity, hence (X1) holds.
+Maximize fidelity:
+\be
+0 \le f(X_f, X_n) \le \frac{1}{2} \left(1 +\frac{P(X_0)}{P(X_f)}\right).
+\ee
+The lower limit on the fidelity results from state operators being positive.
+
+%\be
+%Q(X_f, X_n)
+%= \frac{1}{P(X_f)} (\re) \tr(X_f X_n)
+%= 1/P_f  (\re) tr(X_f  P_n ... P_1 X_0 P_1^\dagger ... P_n^\dagger)
+%\ee
+
+In this task we exceptionally avoid Liouville space using a more complicated propagator:
+\be
+X_i := \left(\prod_{j=1}^{i} P_j\right) X_0 \left(\prod_{j=1}^{i} P_j\right)^\dagger
+\ee
+
+\begin{align}
+\dd{f(X_f, X_n)}{u(t_j)}
+&= \re \left(\dd{g}{u(t_j)} \right)
+= \frac{1}{P(X_f)} (\re) \tr \left(X_f \dd{X_n}{u(t_j)}\right)\\
+&= \frac{1}{P(X_f)} \left(\tr \left(X_f P_n \cdots \dd{P_j}{u(t_j)} \cdots P_1 X_0 P^\dagger_1 \cdots P^\dagger_n\right)
++\tr\left(X_f P_n \cdots P_1 X_0 P^\dagger_1 \cdots \dd{P^\dagger(t_j)}{u(t_j)} \cdots P^\dagger_n\right)\right)\\
+&= \frac{2}{P(X_f)} \re \tr\left(X_f P_n \cdots \dd{P_j}{u(t_j)} \cdots P_1 X_0 P^\dagger_1 \cdots P^\dagger_n\right).
+\end{align}
+NOTE: last line not in paper!
+
+
+NOTE: if both states are pure, $X = \ketbra{X}{X}$, we obtain
+\be
+f(X_f, X_n)
+= (\re)\left|(\tr) \bra{X_f}  P_n \cdots P_1 \ket{X_0} \right|^2
+= Q^2(\ket{X_f}, \ket{X_n}).
+\ee
+(same as Task 3, irrelevant global phase, but with square.)
+
+
+\subsection{Task 5}
+
+General quantum map operator $X$, Markovian propagation
+in Liouville space.
+Minimize operator distance $d(X_f, X_n)$.
+
+A unitary target map,
+$X_f = \hat{U}$, for example, gives $|X_f|^2 = N^2$.
+
+However, the norm of the propagated operator is not necessarily constant:
+\be
+|X_n|^2 = \tr\left(X_0^\dagger \left(\prod_{j=1}^{n} P_j\right)^\dagger \left(\prod_{j=1}^{n} P_j\right) X_0\right).
+\ee
+If $G_j$ is normal $\eq \quad [G_j, G^\dagger_j] = 0$, we have
+\be
+P_j^\dagger P_j
+= \exp(-\tau_j G^\dagger_j) \exp(-\tau_j G_j)
+= \exp(-\tau_j (G_j^\dagger + G_j)).
+\ee
+If all the generators $G_j$ are antihermitian, this reduces to $\I$, and thus
+$|X_n|^2 = \tr(X_0^\dagger X_0) = |X_0|^2$.
+
+If this is not the case, (X1) is not satisfied and fidelity does not uniquely define the distance.
+If it does,
+maximize it:
+\be
+|f(X_f, X_n)| \le \frac{1}{2} \left(1 +\frac{|X_n|^2}{|X_f|^2} \right).
+\ee
+
+Otherwise, directly minimize
+$0 \le d^2(A, B)/|A|^2$
+or equivalently maximize
+\be
+W(A,B) := 2 f(A, B) -\frac{|B|^2}{|A|^2} = 1-d^2(A, B)/|A|^2 \le 1.
+\ee
+The fidelity derivative is computed as usual, the norm derivative gives
+\be
+\dd{|B|^2}{u(t_j)}
+= \dd{}{u(t_j)} \tr(B^\dagger B)
+= \tr\left(B^\dagger \dd{B}{u(t_j)}\right)
++\tr\left(\dd{B^\dagger}{u(t_j)} B \right)
+= 2 \re \tr\left(B^\dagger \dd{B}{u(t_j)}\right).
+\ee
+and thus
+\be
+\dd{W(X_f, X_n)}{u(t_j)}
+= \frac{2}{|X_f|^2} \re \tr\left((X_f-X_n)^\dagger \dd{X_n}{u(t_j)}\right).
+\ee
+
+
+\subsection{Task 6}
+General vectorized state operator $X = \text{vec}(\rho)$, Markovian propagation
+in Liouville space.
+
+Minimize operator distance
+\be
+d(X_f, X_n) = d(\text{vec}(\rho_f), \text{vec}(\rho_n)) = d(\rho_f, \rho_n).
+\ee
+
+$|\rho|^2 = P(\rho)$, but general Markovian propagation does not preserve purity!  
+So, like before, we need to use a bit more complicated quality func...
+
+\end{document}
