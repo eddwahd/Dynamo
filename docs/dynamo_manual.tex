@@ -1,5 +1,6 @@
-\documentclass[aps, pra, a4paper]{revtex4}
-
+\documentclass[aps, pra, a4paper, longbibliography]{revtex4}
+% [VB] needs to be changed to revtex4-1 but my current latex setup is
+% ancient so we'll need to use this for a while
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -15,34 +16,43 @@
 \newcommand{\bra}[1]{\left \langle #1 \right|}
 \newcommand{\braket}[2]{\left \langle #1 | #2 \right \rangle}
 \newcommand{\ketbra}[2]{\left| #1 \right \rangle \left \langle #2 \right|}
+\newcommand{\comm}[2]{\left[ #1, #2 \right]}
 
+\newcommand{\hilb}[1]{\mathcal{#1}}
 
 \DeclareMathOperator{\tr}{tr}
 \DeclareMathOperator{\re}{Re}
+\DeclareMathOperator{\cvec}{vec}
 
 \newcommand{\dd}[2]{\frac{\mathrm{d} #1}{\mathrm{d} #2}}
 
 \begin{document}
 
+\tableofcontents
 
 \section{Basics}
 
+Dynamo~\cite{machnes_2011},
+
+
 \subsection{System}
 
-Governing equation:
+Dynamo can handle several types of linear systems, all of which have a
+master equation of the following type:
 \be
-\dot{X} = -\underbrace{(A(t) +\sum_k u_k(t) B_k)}_{G(t)} X(t) = -G(t) X(t),
+\label{eq:master}
+\dot{X} = -\underbrace{(A(t) +\sum_k u_k(t) B_k)}_{G(t)} X(t) = -G(t) X(t).
 \ee
-where $u_k$ are the (scalar) control fields, $B_k$ the corresponding generators,
-$A$ the drift generator, $X(t)$ the ``system'' (vector or operator), and $G(t)$ the total generator.
+$u_k$ are the (scalar) control fields, $B_k$ the corresponding generators,
+$A$ the drift generator, $X$ the ``system'' (vector or operator), and $G$ the total generator.
 
 Assume that the controls are
 piecewise constant in time: $u_{c,j}$, with $n$~time slices in total,
-and the duration of the $k$th slice is~$\tau_k$, such that
+and that the duration of the $k$th slice is~$\tau_k$, giving
 \be
 t_k = t_0 + \sum_{j=1}^{k} \tau_j.
 \ee
-For each time slice we now get the propagator
+For each time slice we now obtain the propagator
 \be
 P_k := \exp(-G_k \tau_k),
 \ee
@@ -50,7 +60,24 @@ with
 \be
 X_k := X(t_k) = \prod_{j=1}^{k} P_j X(t_0).
 \ee
-NOTE that this propagator always acts on the system by multiplication from the left. In Task 4 we make an exception on this rule.
+This propagator, like the generators, always acts on the system by multiplication
+from the left.
+
+Derivatives:
+\begin{align}
+\dd{P_k}{\tau_k}  &= -G_k P_k = -P_k G_k,\\
+\dd{P_k}{u_{c,k}}
+&=
+\sum_{j=0}^{\infty} \frac{(-\tau_k)^j}{j!}
+\sum_{q=0}^{j-1}
+G_k^{q} \dd{G_k}{u_{c,k}} G_k^{j-q-1}
+=
+\sum_{j=0}^{\infty} \frac{(-\tau_k)^j}{j!}
+\sum_{q=0}^{j-1}
+G_k^{q} B_c G_k^{j-q-1}
+\approx -\tau_k B_c P_k.
+\end{align}
+The approximation is exact if $\comm{B_c}{G_k} = 0$.
 
 
 System and adjoint system propagators:
@@ -88,50 +115,66 @@ $\Lambda_k = P_{n} \cdots P_{k+1}$.}
 
 
 
+
+\subsection{Hilbert space vs. Liouville space}
+
+Equation~\eqref{eq:master} can refer to either Hilbert space or
+Liouville space entities. Liouville space is used
+for open systems, and the $\cvec$-representation of state operators in
+closed systems.
+
+The Liouville space equivalent for a unitary Hilbert space
+propagator~$U$ is $\hat{U} := U^* \otimes U$.
+We then have for any~$A$, $B$
+\be
+\label{eq:hat-product}
+\tr(\hat{A}^\dagger \hat{B})
+= \tr((A^* \otimes A)^\dagger (B^* \otimes B))
+= \tr((A^T B^*) \otimes (A^\dagger B))
+= \tr((A^\dagger B)^* \otimes (A^\dagger B))
+= |\tr(A^\dagger B)|^2.
+\ee
+
+
+
 \subsection{Optimization goal}
 
 We usually wish to minimize an operator/vector distance, measured using the Frobenius norm:
 \be
-d(A, B)^2 = |A-B|^2 = \tr((A-B)^\dagger (A-B))
-= |A|^2 +|B|^2 -\tr(A^\dagger B) -\tr(B^\dagger A)
-= |A|^2 +|B|^2 -2 \re \tr(A^\dagger B)
+d^2(A, B) = |A-B|^2 = \tr((A-B)^\dagger (A-B))
+%= |A|^2 +|B|^2 -\tr(A^\dagger B) -\tr(B^\dagger A)
+= |A|^2 +|B|^2 -2 \re \tr(A^\dagger B).
 \ee
-
-Normalize with $|A|^2$ (assumed fixed, known):
+Normalizing this expression with the target operator norm $|A|^2$ (assumed fixed, known),
+and introducing the normalized \emph{fidelity}\footnote{
+There is another widely used quantity called fidelity in quantum information science which is different from the present one.},
 \be
-\frac{d^2(A, B)}{|A|^2}
-= 1 +\frac{|B|^2}{|A|^2} -\frac{2}{|A|^2} \re \tr(A^\dagger B)
+f(A, B) := \frac{1}{|A|^2} \re \tr(A^\dagger B),
 \ee
-
-Define normalized fidelity\footnote{There is another widely used quantity called fidelity in quantum information science which is different from the present one.}
-(real function):
+we obtain the normalized distance measure
 \be
-f(A, B) := \frac{1}{|A|^2} \re \tr(A^\dagger B).
+\label{eq:df}
+D(A,B)
+:= \frac{d^2(A, B)}{|A|^2}
+= 1 +\frac{|B|^2}{|A|^2} -2 f(A, B).
 \ee
-Clearly $f(A, A) = 1$. Now
+Clearly $f(A, A) = 1$, and we have
 \be
-\frac{d^2(A, B)}{|A|^2} = 1 +\frac{|B|^2}{|A|^2} -2 f(A, B)
+0 \le D(A, B) \le \left(1 + \frac{|B|}{|A|} \right)^2
+\qquad \text{and} \qquad
+|f(A, B)|
+\le \frac{|B|}{|A|}
+%\le \frac{1}{2} \left(1 +\frac{|B|^2}{|A|^2} \right)
 \ee
-and
-\be
-d^2(A, B) \ge 0
-\qquad \eq \qquad
-f(A, B) \le \frac{1}{2} \left(1 +\frac{|B|^2}{|A|^2} \right).
-\ee
-
+since by triangle inequality $|A-B| \le |A|+|B|$,
+and $f(A, -B) = -f(A, B)$.
 
 
 (X1): Is minimum distance equivalent to maximum fidelity?
 If this holds, we may optimize fidelity instead of distance.
-If $|A|^2 = C_A$ and $|B|^2 = C_B$ are constant, we have
-\be
-d(A, B)^2 / C_A = 1 +C_B/C_A - 2 f(A, B)
-\ee
-$\implies$ (X1) holds.
-For a unitary operator~$U$ this is always the case:
-\be
-|U|^2 = \tr(U^\dagger U) = \tr(\I) = N.
-\ee
+If $|A|^2$ and $|B|^2$ are constant
+from Eq.~\eqref{eq:df} we can see that (X1) clearly holds.
+
 
 
 \subsection{Auxiliary function g}
@@ -140,19 +183,17 @@ Define
 \be
 g(A, B) := \frac{1}{|A|^2} \tr(A^\dagger B).
 \ee
-
 We will encounter two common quality functions to be maximized:
 \begin{align}
 f(A,B) &:= \re g(A,B), \: \text{and}\\
 Q(A,B) &:= |g(A,B)|.
 \end{align}
 
-Limits:
-\begin{align}
-|f(A, B)| &\le \frac{1}{2} \left(1 +\frac{|B|^2}{|A|^2} \right),\\
-0 &\le Q^2(A,B) \le \frac{1}{2} \left(1 +\frac{|B|^4}{|A|^4} \right).
-\end{align}
-(The upper limit for $Q$ is obtained using the lifting trick in Task 1.)
+%Limits:
+%\begin{align}
+%0 &\le Q^2(A,B) \le \frac{1}{2} \left(1 +\frac{|B|^4}{|A|^4} \right).
+%\end{align}
+%(The upper limit for $Q$ is obtained using the lifting trick in Task 1.)
 Gradients:
 \begin{align}
 \dd{f(A,B)}{u}
@@ -164,102 +205,64 @@ Gradients:
 
 
 
+
+
 \section{Optimization tasks}
 
-\subsection{Task 1}
+In what follows, all quantum states are assumed to be normalized to unity.
 
-Unitary operator $X$ up to phase, unitary propagation.
 
-We can get rid of phase by lifting the problem into Liouville space:
-$\hat{U} := U^* \otimes U$.
-We then have for any~$A$, $B$
+\subsection{Closed system S}
+
+In a closed system, the propagators~$P_k$ are always unitary.
+
+\subsubsection{Mixed state transfer $\rho_0 \to \rho_f$ (task 4)}
+\label{sec:closed-mixed}
+
+To conform to the form of Eq.~\eqref{eq:master},
+the state operators are treated as vectors in Liouville space, $X~=~\cvec(\rho)$.
+\footnote{It will of course turn out that this is equivalent to treating them as operators in Hilbert
+space, $X~=~\rho$ as far as the results are concerned.}
+The goal here is to minimize state operator distance
+$D(\cvec(\rho_f), \cvec(\rho_n)) = D(\rho_f, \rho_n)$.
+The norm squared is equivalent to the purity of the state:
 \be
-\tr(\hat{A}^\dagger \hat{B})
-= \tr((A^* \otimes A)^\dagger (B^* \otimes B))
-= \tr((A^T B^*) \otimes (A^\dagger B))
-= \tr((A^\dagger B)^* \otimes (A^\dagger B))
-= |\tr(A^\dagger B)|^2,
-\ee
-and thus
-\be
-|\hat{A}|^2 = \tr(\hat{A}^\dagger \hat{A})
-= |\tr(A^\dagger A)|^2
-= |A|^4.
-\ee
-Hence for a unitary~$U$ we have
-$|\hat{U}|^2 = |U|^4 = N^2$.
-
-Minimize operator distance $d(\hat{X}_{f}, \hat{X}_n)$:
-\be
-\frac{d^2(\hat{X}_f, \hat{X}_n)}{|\hat{X}_f|^2} 
-= 1 +\frac{|\hat{X}_n|^2}{|\hat{X}_f|^2} -2 f(\hat{X}_f, \hat{X}_n)
-= 2 -2 f(\hat{X}_f, \hat{X}_n)
-%= 2 -\frac{2}{N^2} (\re) |\tr(A^\dagger B)|^2
-\ee
-(X1) holds, and
-the problem actually simplifies back into Hilbert space, but with an extra abs value squared:
-\be
-f(\hat{X}_f, \hat{X}_n)
-= \frac{1}{N^2} (\re) |\tr(X_f^\dagger X_n)|^2
-= Q^2(X_f, X_n).
-\ee
-Now, maximize $0 \le Q(X_f, X_n) \le 1$.
-
-
-\subsection{Task 2}
-
-Unitary operator $X$, phase matters, unitary propagation.
-Minimize operator distance $d(X_f, X_n)$.
-
-For a unitary operator~$U$,
-$|U|^2 = N$, hence (X1) holds, and we can equivalently maximize the fidelity
-$-1 \le f(X_f, X_n) \le 1$.
-
-
-\subsection{Task 3}
-
-Pure normalized state vector X, unitary propagation.
-$|A|^2 = \braket{A}{A} = 1$.
-Maximize state overlap
-\be
-|\braket{X_f}{X_n}|
-= |(\tr)(X_f^\dagger X_n)|
-= Q(X_f, X_n),
-\ee
-$0 \le Q(X_f, X_n) \le 1$.
-
-
-If global phase matters, minimize $d(X_f, X_n)$, and since (X1) holds,
-maximize the fidelity:
-$-1 \le f(X_f, X_n) \le 1$.
-
-
-
-\subsection{Task 4}
-
-General state operator X, unitary propagation.
-Minimize state operator distance $d(X_f, X_n)$.
-
-\be
-|\rho|^2
+|\cvec(\rho)|^2
 = \tr(\rho^\dagger \rho)
 = \tr(\rho^2)
-= P(\rho)
+= P(\rho).
 \ee
-Unitary propagation conserves purity, hence (X1) holds.
-Maximize fidelity:
+Unitary propagation conserves purity, hence (X1) holds, and we can
+simply maximize the fidelity $f(X_f, X_n)$:
 \be
-0 \le f(X_f, X_n) \le \frac{1}{2} \left(1 +\frac{P(X_0)}{P(X_f)}\right).
+f(X_f, X_n)
+%= \frac{1}{P(\rho_f)} (\re) \tr(X_f^\dagger X_n)
+= \frac{1}{P(\rho_f)} (\re) (\tr) \left( X_f^\dagger  P_n \cdots P_1 X_0 \right).
 \ee
-The lower limit on the fidelity results from state operators being positive.
+Furthermore, the fidelity is strictly nonnegative since the
+state operators are positive:
+\be
+0 \le f(X_f, X_n) \le \frac{P(\rho_0)}{P(\rho_f)}.
+\ee
+If either $\rho_f$ or $\rho_0$ is pure,
+$\rho = \ketbra{\psi}{\psi}$,
+we have $|\rho|^2 = \braket{\psi}{\psi}^2 = 1$, and
+the diagram simplifies by splitting up.
 
-%\be
-%Q(X_f, X_n)
-%= \frac{1}{P(X_f)} (\re) \tr(X_f X_n)
-%= 1/P_f  (\re) tr(X_f  P_n ... P_1 X_0 P_1^\dagger ... P_n^\dagger)
-%\ee
 
-In this task we exceptionally avoid Liouville space using a more complicated propagator:
+
+
+
+TODO
+Alternatively, we can choose $X = \rho$ at the expense of a slightly
+more complicated expression for the fidelity:
+\begin{comment}
+\be
+f(X_f, X_n)
+= \frac{1}{P(X_f)} (\re) \tr(X_f^\dagger X_n)
+= \frac{1}{P(X_f)} (\re) \tr(X_f^\dagger  P_n ... P_1 X_0 P_1^\dagger ... P_n^\dagger)
+\ee
+
 \be
 X_i := \left(\prod_{j=1}^{i} P_j\right) X_0 \left(\prod_{j=1}^{i} P_j\right)^\dagger
 \ee
@@ -273,27 +276,116 @@ X_i := \left(\prod_{j=1}^{i} P_j\right) X_0 \left(\prod_{j=1}^{i} P_j\right)^\da
 &= \frac{2}{P(X_f)} \re \tr\left(X_f P_n \cdots \dd{P_j}{u(t_j)} \cdots P_1 X_0 P^\dagger_1 \cdots P^\dagger_n\right).
 \end{align}
 NOTE: last line not in paper!
+\end{comment}
 
 
-NOTE: if both states are pure, $X = \ketbra{X}{X}$, we obtain
+
+\subsubsection{Pure state transfer $\ket{\psi_0} \to \ket{\psi_f}$ (task 3)}
+\label{sec:closed-pure}
+
+Using the results from the previous section with both states pure,
+$\rho = \ketbra{\psi}{\psi}$, with
+$X = \cvec(\rho) = \ket{\psi^*} \otimes \ket{\psi}$,
+the fidelity diagram breaks into two pieces and
+we obtain
 \be
 f(X_f, X_n)
-= (\re)\left|(\tr) \bra{X_f}  P_n \cdots P_1 \ket{X_0} \right|^2
-= Q^2(\ket{X_f}, \ket{X_n}).
+= (\re) \left|(\tr) \bra{\psi_f}  P_n \cdots P_1 \ket{\psi_0} \right|^2.
 \ee
-(same as Task 3, irrelevant global phase, but with square.)
+with $0 \le f(X_f, X_n) \le 1$.
+Thus the problem simplifies back into Hilbert space
+(albeit with an extra absolute value squared in the expression for the fidelity), and we may equivalently
+choose $X = \ket{\psi}$ and maximize $Q(X_f, X_n)$.
 
 
-\subsection{Task 5}
+%Maximize state overlap
+% TODO redefine X, in which space does P operate?
 
-General quantum map operator $X$, Markovian propagation
-in Liouville space.
-Minimize operator distance $d(X_f, X_n)$.
+
+If global phase matters (NOTE: this is unphysical), we may define $X = \ket{\psi}$ and minimize
+$D(X_f, X_n)$ directly, and since (X1) holds,
+equivalently maximize the fidelity
+\be
+f(X_f, X_n)
+= \re (\tr) \left(X_f^\dagger P_n \cdots P_1 X_0 \right),
+\ee
+obeying
+$|f(X_f, X_n)| \le 1$.
+
+
+
+\subsubsection{Unitary propagator (tasks 1 and 2)}
+
+In this task we wish to generate a unitary gate~$V_f$ up to global
+phase, starting from the identity~$V_0 = \I$.
+We can get rid of phase by explicitly lifting the problem into Liouville space,
+$X = \hat{V} = V^* \otimes V$,
+and then minimize the operator distance~$D(X_f, X_n)$.
+
+Using Eq.~\eqref{eq:hat-product}, the norm squared is 
+\be
+|\hat{V}|^2
+= \tr(\hat{V}^\dagger \hat{V})
+= |\tr(V^\dagger V)|^2
+= |\tr(\I)|^2
+= N^2,
+\ee
+where $N = \dim \hilb{H}$.
+%\be
+%|U|^2 = \tr(U^\dagger U) = \tr(\I) = N.
+%\ee
+This is constant, so (X1) holds and we may maximize the fidelity instead:
+\be
+f(X_f, X_n)
+= \frac{1}{N^2} \re \tr \left(\hat{V_f}^\dagger \hat{V_n} \right)
+%= \frac{1}{N^2} (\re) \left| \tr \left(V_f^\dagger V_n \right) \right|^2
+= \frac{1}{N^2} (\re) \left| \tr \left(V_f^\dagger P_n \cdots P_1 V_0 \right) \right|^2.
+\ee
+Much like in
+Sec.~\ref{sec:closed-pure},
+the problem simplifies back into Hilbert space, and we may equivalently
+choose $X = V$ and
+maximize $0 \le Q(X_f, X_n) \le 1$.
+
+
+If global phase matters (NOTE: unphysical), we may choose~$X = V$ and directly minimize
+the operator distance~$D(X_f, X_n)$.
+For a unitary operator~$V$ we have $|V|^2 = N$, hence (X1) holds, and
+we can equivalently maximize the fidelity
+\be
+f(X_f, X_n)
+= \frac{1}{N} \re \tr \left(X_f^\dagger P_n \cdots P_1 X_0 \right)
+\ee
+with $|f(X_f, X_n)| \le 1$.
+
+
+
+\subsection{Open system with bath S+B}
+
+In this case we have a system~$S$ coupled to a Markovian bath~$B$.
+The propagators~$P_k$ are now expressible using Lindblad operators.
+
+
+\subsubsection{Mixed state transfer $\rho_0 \to \rho_f$ (task 6)}
+
+Like in Sec.~\ref{sec:closed-mixed} we choose $X~=~\cvec(\rho)$ and
+minimize $D(\cvec(\rho_f), \cvec(\rho_n)) = D(\rho_f, \rho_n)$.
+Likewise, we have
+$|\rho|^2 = P(\rho)$, but general Markovian propagation does not
+preserve purity, so (X1) does not hold.
+
+So, like before, we need to use a bit more complicated quality func...
+
+
+
+\subsubsection{General quantum map (task 5)}
+
+General quantum map operator $X = F$,
+minimize operator distance $D(X_f, X_n)$.
 
 A unitary target map,
-$X_f = \hat{U}$, for example, gives $|X_f|^2 = N^2$.
-
-However, the norm of the propagated operator is not necessarily constant:
+$X_f = \hat{V}$, for example, gives $|X_f|^2 = N^2$.
+However, the norm of the propagated operator~$X_n$ is not necessarily constant:
 \be
 |X_n|^2 = \tr\left(X_0^\dagger \left(\prod_{j=1}^{n} P_j\right)^\dagger \left(\prod_{j=1}^{n} P_j\right) X_0\right).
 \ee
@@ -307,17 +399,14 @@ If all the generators $G_j$ are antihermitian, this reduces to $\I$, and thus
 $|X_n|^2 = \tr(X_0^\dagger X_0) = |X_0|^2$.
 
 If this is not the case, (X1) is not satisfied and fidelity does not uniquely define the distance.
-If it does,
-maximize it:
+If it does, maximize it:
 \be
-|f(X_f, X_n)| \le \frac{1}{2} \left(1 +\frac{|X_n|^2}{|X_f|^2} \right).
+|f(X_f, X_n)| \le \frac{|X_0|}{|X_f|}.
 \ee
-
-Otherwise, directly minimize
-$0 \le d^2(A, B)/|A|^2$
+Otherwise, directly minimize~$D(X_f, X_n)$
 or equivalently maximize
 \be
-W(A,B) := 2 f(A, B) -\frac{|B|^2}{|A|^2} = 1-d^2(A, B)/|A|^2 \le 1.
+W(X_f,X_n) := 1 - D(X_f, X_n) = 2 f(X_f, X_n) -\frac{|X_n|^2}{|X_f|^2} \le 1.
 \ee
 The fidelity derivative is computed as usual, the norm derivative gives
 \be
@@ -334,16 +423,19 @@ and thus
 \ee
 
 
-\subsection{Task 6}
-General vectorized state operator $X = \text{vec}(\rho)$, Markovian propagation
-in Liouville space.
+\subsection{Closed system and environment S+E}
 
-Minimize operator distance
-\be
-d(X_f, X_n) = d(\text{vec}(\rho_f), \text{vec}(\rho_n)) = d(\rho_f, \rho_n).
-\ee
+In this case we have a system~$S$ coherently coupled to an
+environment~$E$, but are only interested in the state of the system.
+The $S$+$E$ propagators~$P_k$ are unitary.
 
-$|\rho|^2 = P(\rho)$, but general Markovian propagation does not preserve purity!  
-So, like before, we need to use a bit more complicated quality func...
+partial distance measures~\cite{kosut_2006}.
 
+\subsection{Open system and environment coupled to a bath S+E+B}
+
+TODO
+
+
+
+\bibliography{dynamo}
 \end{document}
