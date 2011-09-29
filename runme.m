@@ -17,7 +17,7 @@ global OC; % and now we can access it too
 %% Define the physics of the problem
 
 
-if true
+if 0
     test_suite(23);
 else
     
@@ -52,27 +52,31 @@ squared_controls = logical([0, 0, 0, 0]);
 
 % noise/dissipation
 % FIXME NOTE the minus sign (different convention)
-L_drift = -0.002 * superop_lindblad(depolarize1);
+L_drift = -0.002 * superop_lindblad(depolarize1) -0.0013 * superop_lindblad(depolarize2);
 
 initial = eye(dim);
 final = qft(n_spins);
 %final = eye(dim); 
 
-% for task3 (pure state transfer)
+% for pure state transfer
 %initial = [1; 0; 0; 0];
 %final = [1; 0; 0; 1]/sqrt(2);
 
+%dynamo_init('S ket phase', initial, final, H_drift, H_ctrl)
+%dynamo_init('S state', initial, final, H_drift, H_ctrl)
+dynamo_init('S gate', initial, final, H_drift, H_ctrl)
+%dynamo_init('SB state', initial, final, H_drift, H_ctrl, L_drift)
+%dynamo_init('SB gate', initial, final, H_drift, H_ctrl, L_drift)
 
-%dynamo_init('task5', initial, final, H_drift, H_ctrl, L_drift)
-dynamo_init('task1', initial, final, H_drift, H_ctrl)
+
 
 
 %% Optimization options
 
 
 if 1
-    T = 6 * (n_spins-1) / 1; % How much time do we have to drive the system? The value specified here has empirically been shown to work well
-    timeslots = 20
+    T = 6; % How much time do we have to drive the system? The value specified here has empirically been shown to work well
+    timeslots = 10;
     
     % Time-slot configuration. Can also be a vector of delta t:s.
     normal_controls = [timeslots, length(OC.system.B)];
@@ -80,7 +84,8 @@ if 1
 
     % Generate random initial controls
     initial_controls = 0.2 * (rand(normal_controls) - 0.5);
-    if 0
+    %initial_controls = 0.2 * ones(normal_controls);
+    if 1
         % optimize tau
         tau_par = [0.25 * T, 0.75 * T]; % min, delta
 
@@ -111,7 +116,7 @@ end
 
 %% Now do the actual search
 
-fprintf ('Optimizing algorithm: GRAPE (BFGS 2nd order update scheme, updating all time slices concurrently).\n\n    Please wait, this may take a while... \n\n'); drawnow;
+fprintf ('\nOptimizing algorithm: GRAPE (BFGS 2nd order update scheme, updating all time slices concurrently).\n\n    Please wait, this may take a while... \n\n'); drawnow;
 
 OC.config.BFGS = struct('fminopt', struct('Display', 'off'));
 termination_reason = search_BFGS();

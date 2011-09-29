@@ -20,7 +20,7 @@ if n_controls ~= length(OC.system.B)
     error('Number of control Hamiltonians does not match the number of controls given.')
 end
 
-fprintf('Timeslots: %d\nControls: %d\n', n_timeslots, n_controls);
+fprintf('\nTimeslots: %d\nControls: %d + tau\n', n_timeslots, n_controls);
 
 
 %% Check the validity of the parameters. This code needs to change when controls_transform changes.
@@ -85,16 +85,8 @@ OC.cache.L = cell(temp + [0, 1]);
 
 % U: X_initial propagated forward up to a time instant.
 OC.cache.U{1} = OC.system.X_initial;
-switch OC.config.task
-  case {'task5', 'task6'}
-    % NOTE: in these tasks, L is a pure propagator (even though storing them requires more memory).
-    OC.cache.L{end} = eye(length(OC.system.X_final));
-    
-  otherwise
-    % L: X_final propagated backward 
-    OC.cache.L{end} = OC.system.X_final';
-end
-
+% L: X_final' propagated backward, or in open-system tasks, a pure propagator (even though this requires more memory).
+OC.cache.L{end} = OC.cache.L_end;
 
 % Keep track of what needs re-computation if we want a complete update of everything.
 % U{1} and L{end} are never stale and never recomputed.

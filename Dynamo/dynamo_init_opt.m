@@ -4,7 +4,9 @@ function dynamo_init_opt(control_mask)
 global OC;
 
 OC.opt.control_mask = control_mask;
-    
+
+fprintf('Optimization space dimension: %d\n', sum(sum(control_mask)));
+
 OC.opt.N_iter = 0;
 OC.opt.N_eval = 0;
 OC.opt.last_grad_norm = NaN;
