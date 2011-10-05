@@ -20,8 +20,12 @@ N = length(minus_dt_H);
 
 %% Compute the eigenvalue factors and eigenvectors of -dt*H
 
-[v, lambda] = eig(minus_dt_H);
-lambda = diag(lambda);  % note that the eigenvalues include -dt
+% TEST: trickery with 1i. Making the matrix hermitian causes eig to
+% switch to an algorithm which produces orthogonal eigenvectors
+% even for degenerate eigenvalues.
+% TODO find an easier solution?
+[v, lambda] = eig(-1i * minus_dt_H);
+lambda = 1i * diag(lambda);  % note that the eigenvalues include -dt
 lambdaExp = exp(lambda);
 
 lambda_row_mat  = lambda * ones(1,N);

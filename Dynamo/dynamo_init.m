@@ -73,8 +73,6 @@ switch system
         L_drift = 0;
         system_liouville();
         OC.config.Q_func = @Q_real;
-        % FIXME problems with calcPfromH_exact_gradient, eig
-        % doesn't give orthonormal eigenvectors...
         
       case {'ket', 'gate'}
         if strcmp(task, 'ket')
