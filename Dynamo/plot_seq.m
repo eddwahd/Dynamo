@@ -11,7 +11,7 @@ c = seq.control;
 nc = size(c, 2); % number of controls
 
 colormap(jet)
-set(gca, 'CLim', [1 nc])
+set(gca, 'CLim', [0 nc])
 hold on
 for j=1:length(t)-1
     x = [t(j), t(j+1), t(j+1), t(j)];

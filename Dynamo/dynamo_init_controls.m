@@ -1,6 +1,6 @@
-function dynamo_init_controls(controls, par, squared)
+function dynamo_init_controls(controls, tau_par, control_type, control_par)
 
-%  tau: vector with the min. durations of the time slots, or a scalar denoting the min. total time.
+%  tau_par: vector with the min. durations of the time slots, or a scalar denoting the min. total time.
 %  controls: initial control values, size == [n_timeslots, n_controls].
 %  squared: optional, boolean vector denoting which controls should be squared (nonnegative).
 %
@@ -23,31 +23,42 @@ end
 fprintf('\nTimeslots: %d\nControls: %d + tau\n', n_timeslots, n_controls);
 
 
-%% Check the validity of the parameters. This code needs to change when controls_transform changes.
+%% Check the validity of the parameters.
+% NOTE: This code needs to change when controls_transform changes.
 
-% Check squared (nonnegative) control fields
+% Check control types
 if nargin < 3
-    squared = false(1, n_controls);
-elseif length(squared) ~= n_controls
-    error('Length of the squared vector does not match the number of controls.')
+    control_type = char(zeros(1, n_controls) + '.');
+elseif length(control_type) ~= n_controls
+    error('Length of the control_type vector does not match the number of controls.')
 end
-OC.seq.squared = squared;
+OC.seq.control_type = control_type;
 
-if ~all(squared(OC.system.B_is_superop))
+if any(control_type(OC.system.B_is_superop) == '.')
     disp('Warning: Liouvillian control ops with possibly negative control values.')
 end
 
 
-% Is par a total time or a vector of delta_t:s?
-len_params = size(par, 1);
+% Check control parameters
+% For now control_par doesn't have separate entries for each timeslot
+if nargin < 4
+    control_par = cell(size(control_type));
+elseif length(control_par) ~= n_controls
+    error('Length of the control_par vector does not match the number of controls.')
+end
+OC.seq.control_par = control_par;
+
+
+% Is tau_par a total time or a vector of delta_t:s?
+len_params = size(tau_par, 1);
 if len_params == 1
     % divide the parameters uniformly into timeslots
-    OC.seq.par = ones(n_timeslots,1) * (par / n_timeslots);
+    OC.seq.tau_par = ones(n_timeslots,1) * (tau_par / n_timeslots);
 else
     if len_params ~= n_timeslots
-        error('Length of par does not match the number of control timeslots given.')
+        error('Length of tau_par does not match the number of control timeslots given.')
     end
-    OC.seq.par = par;
+    OC.seq.tau_par = tau_par;
 end
 
 
