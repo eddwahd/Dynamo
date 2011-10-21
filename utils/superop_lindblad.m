@@ -17,7 +17,7 @@ function L = superop_lindblad(A, H)
 
 if (nargin == 2)
   % Hamiltonian
-  iH = i*H;
+  iH = 1i*H;
 else
   iH = 0;
 end
