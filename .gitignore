@@ -1,0 +1,11 @@
+*.diff
+*~
+*.aux
+*.bbl
+*.blg
+*.dvi
+*.end
+*.log
+*.out
+*.pdf
+*.toc
