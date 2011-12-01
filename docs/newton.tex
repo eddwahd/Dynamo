@@ -1,0 +1,335 @@
+\documentclass[aps,pra,12pt,showpacs,showkeys,nofootinbib,superscriptaddress,longbibliography]{revtex4}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amssymb,amsmath,amsfonts,amsthm}
+\usepackage{verbatim}
+\usepackage{enumerate}
+\usepackage{tensor}
+\usepackage{graphicx}
+%\usepackage{hyperref}
+
+\renewcommand{\baselinestretch}{1}  % cancels any possible double spacing
+
+
+% bra and ket: 
+\newcommand{\bra}[1]{\mbox{$\langle #1|$}}
+\newcommand{\ket}[1]{\mbox{$|#1\rangle$}}
+\newcommand{\braket}[2]{\mbox{$\langle #1|#2\rangle$}}
+\newcommand{\ketbra}[2]{\mbox{$|#1\rangle\langle #2|$}}
+
+\newcommand{\inprod}[2]{\mbox{$\langle #1, #2\rangle$}}
+
+\newcommand{\comm}[2]{\ensuremath{\left[#1, \: #2\right]}}
+\newcommand{\acomm}[2]{\ensuremath{\left\{#1, \: #2\right\}}}
+
+\newcommand{\gate}[1]{\ensuremath{\text{\sc #1}}}
+
+\DeclareMathOperator{\Tr}{Tr}
+\DeclareMathOperator{\Real}{Re}
+\DeclareMathOperator{\Imag}{Im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\Hom}{Hom} % set of homomorphisms between two spaces/groups
+\DeclareMathOperator{\Aut}{Aut} % automorphism group
+\DeclareMathOperator{\End}{End} % set of endomorphisms
+
+\DeclareMathOperator{\VEC}{vec}
+
+\DeclareMathOperator{\id}{id} % identity map
+\newcommand{\I}{\openone}     % identity operator
+\newcommand{\R}{{\mathbb R}}  % real numbers
+\newcommand{\C}{{\mathbb C}}  % complex numbers
+\newcommand{\hilb}[1]{\ensuremath{\mathcal{#1}}} % Hilbert space
+\newcommand{\swap}{{\sf{SWAP}}}
+\newcommand{\ie}{i.e.}
+\newcommand{\mf}[1]{\mathfrak{#1}}
+\newcommand{\wrt}[1]{\: \mathrm{d}#1}  % integral with respect to
+
+\newcommand{\pde}[2]{\frac{\partial #1}{\partial #2}}
+
+\newcommand{\be}{\begin{equation}}
+\newcommand{\ee}{\end{equation}}
+
+\newcommand{\Figref}[1]{Fig.~\ref{#1}}
+
+
+\begin{document}
+\title{Notes on the Newton-Raphson quantum gate optimization method}
+
+\author{Ville Bergholm}
+\email{ville.bergholm@iki.fi}
+\affiliation{Department of Chemistry, Technische Universität München, Germany}
+
+% \pacs{}
+% \keywords{tensor network, invariant} not needed as they are embedded into the PDF.  
+
+\begin{abstract}
+Detailed derivation of the key results required by the Newton-Raphson
+quantum gate optimization algorithm.
+\end{abstract}
+\maketitle
+
+\section{Introduction}
+
+\subsection{Definitions}
+Assume a system with the Hamiltonian
+\be
+H(t) = A +\sum_{r=1}^R B_r f_r(t),
+\ee
+where $A$~is the drift term, $B_r$~are the control terms and
+$f_r(t)$ are the control fields. They can be discretized by expanding
+them in a basis~$\{b_k(t)\}_k$:
+\be
+f_r(t) = \sum_{k=1}^K \alpha_{rk} b_k(t).
+\ee
+The simplest choice is the piecewise constant basis:
+\be
+b_k(t) = 
+\begin{cases}
+  1 & \text{when} \quad t_{k-1} \le t < t_k,\\
+  0 & \text{otherwise}.
+\end{cases}
+\ee
+In this case the propagator is of a simple product form:
+\begin{align*}
+U_f(T)
+&= \mathcal{T} \exp\left(\frac{1}{i\hbar} \int_0^T H(t) \wrt{t} \right)
+=  \mathcal{T} \exp\left(\frac{1}{i\hbar} \sum_{n=1}^N \int_{t_{n-1}}^{t_n} \left(A +\sum_{rk} B_r \alpha_{rk} b_k(t)\right) \wrt{t} \right)\\
+&= \mathcal{T} \exp\left(\frac{1}{i\hbar} \sum_{n=1}^N \int_{t_{n-1}}^{t_n} \left(A +\sum_{r} B_r \alpha_{rn} \right) \wrt{t} \right)
+= \mathcal{T} \exp\left(\frac{1}{i\hbar} \sum_{n=1}^N \tau_n H_n \right)\\
+&= \exp \left(\frac{\tau_N H_N}{i\hbar}\right)
+\exp \left(\frac{\tau_{N-1} H_{N-1}}{i\hbar}\right) \cdots
+\exp \left(\frac{\tau_1 H_1}{i\hbar}\right)
+= U_N U_{N-1} \cdots U_1.
+\end{align*}
+
+
+\subsection{$\exp$ and $\log$}
+$\mf{u}(N)$ is the real vector space of $N \times N$ anti-Hermitian
+matrices, and also a Lie algebra. We use the Hilbert-Schmidt inner
+product
+\be
+\inprod{A}{B} := \Tr(A^\dagger B),
+\ee
+and the induced Frobenius norm.
+
+\begin{align*}
+\exp &: \mf{u}(N) \to U(N),\\
+\log &: U(N) \to \mf{u}(N).
+\end{align*}
+Any $A \in \mf{u}(N)$ or $U \in U(N)$ is normal, and thus we may use
+the eigendecomposition:
+\begin{align*}
+A &= \sum_k i \alpha_k \ketbra{\lambda_k}{\lambda_k}, \quad \alpha_k \in \R,\\
+\exp(A) &= \sum_k \exp(i \alpha_k) \ketbra{\lambda_k}{\lambda_k}.
+\end{align*}
+$\log$ is defined to use the branch which minimizes $\|\log(A)\|$, which
+results in the eigenvalues of~$\log(U)$ to reside in~$i (\pi, \pi]$.
+
+
+
+\subsection{Jacobian}
+Given a function~$f: \R^a \to \R^b$, its Jacobian is defined as
+\be
+J(f): \R^a \to \Hom(\R^a, \R^b).
+\ee
+$f$ is approximated by the
+linear function
+$f(x+y) \approx f(x) + J(f)|_x \: y$
+near~$x \in \R^a$.
+The Jacobian is given by the matrix
+\be
+J_{jk}(f) := \pde{f_j}{x_k}.
+\ee
+Given a function~$g: \R^b \to \R^c$, we can use the chain rule to
+obtain the Jacobian for the function $g \circ f$:
+\be
+J(g \circ f)|_{x} = J(g)|_{f(x)} J(f)|_{x}
+\ee
+(matrix product of two Jacobian matrices).
+
+Now let's add linear transformations before and after~$f$:
+\begin{align*}
+f' &:= B \circ f \circ A,\\
+J(f')|_x &= J(B)|_{f(A(x))} J(f)|_{A(x)} J(A)|_{x} = B J(f)|_{A(x)} A,
+\end{align*}
+since the Jacobian of a linear map at any point is just the corresponding constant matrix.
+Hence, if $A$ and $B$ are basis changes (invertible), $J(f')|_x$ is
+invertible whenever $J(f)|_{A(x)}$ is.
+
+
+\subsection{Exact gradient of the~$\exp$ function}
+
+
+Assume $H(\vec{u}) = A +\sum_{r} u_{r} B_r$ is normal for all choices of~$\vec{u}$:
+\be
+H(\vec{u}) = \sum_k \lambda_k \ketbra{\lambda_k}{\lambda_k},
+\ee
+where everything depends implicitly on~$\vec{u}$.
+NOTE! Actually we don't use this property at all below, it is enough
+to assume that $H$ has eigenvectors and -values.
+If $H$ is not normal there won't be an orthonormal basis of eigenvectors, which
+hurts us later though.
+
+
+\begin{align*}
+\bra{\lambda_a} \pde{\exp(H(\vec{u}))}{u_{r}} \ket{\lambda_b} 
+&=
+\bra{\lambda_a} \left. \left(\pde{}{x} \exp(H(\vec{u}) +x
+B_r)\right)\right|_{x = 0}  \ket{\lambda_b}\\
+&=
+\left. \bra{\lambda_a} \left(\pde{}{x} e^{H +x B_r}\right)
+\ket{\lambda_b} \right|_{x = 0}\\
+&=
+\left. \bra{\lambda_a} \left(\pde{}{x} \sum_{n=0}^\infty
+\frac{1}{n!}(H +x B_r)^n \right) \ket{\lambda_b} \right|_{x = 0}\\
+&=
+\left. \bra{\lambda_a} \left(\sum_{n=1}^\infty \frac{1}{n!}
+\sum_{q=1}^n (H +x B_r)^{q-1} B_r (H +x B_r)^{n-q} \right) \ket{\lambda_b} \right|_{x = 0}\\
+&=
+\bra{\lambda_a} \left(\sum_{n=1}^\infty \frac{1}{n!}
+\sum_{q=1}^n H^{q-1} B_r H^{n-q} \right) \ket{\lambda_b}\\
+%&=
+%\left(\sum_{n=1}^\infty \frac{1}{n!}
+%\sum_{q=1}^n \lambda_a^{q-1} \bra{\lambda_a} B_r \ket{\lambda_b} \lambda_b^{n-q} \right)\\
+&=
+\bra{\lambda_a} B_r \ket{\lambda_b} \sum_{n=1}^\infty \frac{1}{n!}
+\sum_{q=1}^n \lambda_a^{q-1} \lambda_b^{n-q}.
+\end{align*}
+If $\lambda_a = \lambda_b$, this gives~$\bra{\lambda_a} B_r \ket{\lambda_b} e^{\lambda_b}$.
+Otherwise one of them is nonzero (assuming $\lambda_b \neq 0$ here)
+and we have
+\begin{align}
+\notag
+\bra{\lambda_a} \pde{\exp(H(\vec{u}))}{u_{r}} \ket{\lambda_b} 
+&=
+\bra{\lambda_a} B_r \ket{\lambda_b} \sum_{n=1}^\infty \frac{1}{n!}
+\lambda_b^{n-1} \sum_{q=1}^n \left(\frac{\lambda_a}{\lambda_b} \right)^{q-1}
+=
+\bra{\lambda_a} B_r \ket{\lambda_b} \sum_{n=1}^\infty \frac{1}{n!}
+\lambda_b^{n-1} \frac{(\lambda_a/\lambda_b)^n-1}{\lambda_a/\lambda_b - 1}\\
+\notag
+&=
+\bra{\lambda_a} B_r \ket{\lambda_b} \sum_{n=1}^\infty \frac{1}{n!}
+\frac{\lambda_a^n - \lambda_b^n}{\lambda_a - \lambda_b}
+=
+\bra{\lambda_a} B_r \ket{\lambda_b}
+\frac{e^{\lambda_a} - e^{\lambda_b}}{\lambda_a - \lambda_b}\\
+&=
+\bra{\lambda_a} B_r \ket{\lambda_b} e^{\lambda_b} \gamma(\lambda_a - \lambda_b)
+=
+\bra{\lambda_a} B_r \ket{\lambda_b} e^{\lambda_a} \gamma(\lambda_b - \lambda_a),
+\label{eq:expgrad}
+\end{align}
+where
+\be
+\gamma(z) := \frac{e^z - 1}{z}.
+\ee
+By continuously extending the defintion to~$\gamma(0) := 1$, this
+expression also works in the case where~$\lambda_a = \lambda_b$.
+
+
+
+\section{The linearization function $\mf{L}$}
+
+
+
+Let $V$ be the target gate, $U_f$ the actual propagator and $P$ a
+projector into the traceless subspace of~$\mf{u}(N)$. The gate
+optimization problem is now reduced to finding the root(s) of the function
+\be
+\mf{L}(f) := P \log(V^\dagger U_f).
+\ee
+
+
+
+
+\subsection{Jacobian}
+
+
+Define
+\be
+q: U(N) \to U(N), \quad q := \exp \circ \log = \id_{U(N)}.
+\ee
+Using the chain rule we obtain
+\be
+J(q)|_{U} = J(\exp)|_{\log(U)} J(\log)|_{U} = \I
+\ee
+% \I: which vector space? depends on the parameterizations
+
+If $J(\exp)|_{\log(U)}$ is invertible we obtain
+\be
+\label{eq:invJ}
+J(\log)|_{U} =  (J(\exp)|_{\log(U)})^{-1}.
+\ee
+
+Now, assume we express the elements of
+$\mf{u}(N)$
+in an antihermitian basis~$\{B_j\}_{j=1}^{N^2}$ using real coefficients:
+\be
+A = \sum_j a_j B_j = \sum_k \lambda_k \ketbra{\lambda_k}{\lambda_k}
+\ee
+(where the latter expression is the eigendecomposition of a
+particular~$A \in \mf{u}(N)$).
+Expanding the operator $\exp(A)$ in the eigenbasis~$\{\ket{\lambda_k}\}_{k=1}^N$ and then vectorizing it, we
+obtain the Jacobian matrix
+\begin{align}
+J_{ba,j}(\exp)|_A
+:= \left.\left(\bra{\lambda_a}  \pde{\exp(A)}{a_j} \ket{\lambda_b} \right) \right|_A
+= e^{\lambda_a} \gamma(\lambda_b - \lambda_a) \bra{\lambda_a} B_j \ket{\lambda_b},
+\end{align}
+($a,b$: eigenbasis, $j$: antihermitian basis)
+where the final expression was obtained using Eq.~\eqref{eq:expgrad} from the previous section.
+
+Define $\Lambda := \sum_i \ketbra{\lambda_i}{i}$ and $\Gamma_{xy} := \gamma(\lambda_y-\lambda_x)$.
+\begin{align}
+\notag
+\VEC_{\lambda}^{-1}\left(J(\exp)|_A \: \VEC(D)\right)
+&= \sum_{abj} \ketbra{\lambda_a}{\lambda_b} \: J_{ba,j}(\exp)|_A \: \VEC(B_j)^\dagger \VEC(D)\\
+\notag
+&= \sum_{abj} \ketbra{\lambda_a}{\lambda_b}
+e^{\lambda_a} \gamma(\lambda_b - \lambda_a) \bra{\lambda_a} B_j \ket{\lambda_b} \: \inprod{B_j}{D}\\
+\notag
+&= \sum_{ab} \ketbra{\lambda_a}{\lambda_b} \: e^{\lambda_a} \gamma(\lambda_b -\lambda_a) \bra{\lambda_a}
+D \ket{\lambda_b}
+= \sum_{ab} \ket{\lambda_a} e^{\lambda_a} \Gamma_{ab} (\Lambda^\dagger
+D \Lambda)_{ab} \bra{\lambda_b}\\
+&= \sum_{ab} e^A  \ketbra{\lambda_a}{a} \left(\Gamma \odot
+(\Lambda^\dagger D \Lambda) \right) \ketbra{b}{\lambda_b}
+= e^A \Lambda \left(\Gamma \odot (\Lambda^\dagger D \Lambda) \right) \Lambda^\dagger.
+\end{align}
+$\odot$ and $\oslash$ denote an elementwise (Hadamard) product and division.
+With $A = \log(U)$, Eq.~\eqref{eq:invJ} now gives
+\be
+\VEC^{-1}\left(J(\log)|_U \: \VEC_{\lambda}(X)\right)
+= \Lambda \left((\Lambda^\dagger U^\dagger X \Lambda)
+\oslash \Gamma\right) \Lambda^\dagger,
+\ee
+% check inverse; works both ways
+and finally
+\begin{align}
+\notag
+\pde{}{\alpha_{rk}} \mf{L}(f)
+&= J(\mf{L}(f))|_f \: \vec{e}_{rk}
+= J(P)|_{\log(V^\dagger U_f)} J(\log)|_{V^\dagger U_f} J(V^\dagger U_f)|_{f} \: \vec{e}_{rk}\\
+\notag
+&= P \: J(\log)|_{V^\dagger U_f}
+\left. \left( V^\dagger \pde{}{\alpha_{rk}} U_f \right)\right|_{f}\\
+&= P \VEC \left( 
+\Lambda \left((\Lambda^\dagger U_f^\dagger V \VEC^{-1}
+\left. \left( V^\dagger \pde{}{\alpha_{rk}} U_f \right)\right|_{f}
+\Lambda) \oslash \Gamma \right) \Lambda^\dagger
+\right),
+\end{align}
+where $\Lambda$ and $\Gamma$ are obtained from the eigendecomposition
+of~$V^\dagger U_f$ as explained above.
+
+TODO finish
+
+%\begin{acknowledgments}
+%\end{acknowledgments}
+
+\bibliography{qc}
+\end{document}
+
+ 
