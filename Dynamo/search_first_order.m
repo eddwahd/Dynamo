@@ -10,7 +10,7 @@ end
 
 stop = false;
 
-x = controls_get(OC.opt.control_mask);
+x = control_get(OC.opt.control_mask);
 
 while ~stop
     OC.opt.N_eval = OC.opt.N_eval + 1;
@@ -19,7 +19,7 @@ while ~stop
     
     x = x + OC.config.FirstOrder.step_size .* grad(:);
     OC.opt.last_grad_norm = sqrt(sum(sum(grad .* grad)));
-    controls_update(x, OC.opt.control_mask);
+    control_update(x, OC.opt.control_mask);
 
     next_v = OC.config.Q_func();
     

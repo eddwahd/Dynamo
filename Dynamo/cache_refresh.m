@@ -13,7 +13,7 @@ global OC;
 % It then updates the 'is_stale' to indicate what has been actually
 % computed, and clears the 'needed_now'
 %
-% Assumption: the inter-dependence of H and U/L updates is taken care of in 'controls_update'
+% Assumption: the inter-dependence of H and U/L updates is taken care of in 'control_update'
 
 
 U_recompute_now = OC.cache.U_needed_now & OC.cache.U_is_stale;

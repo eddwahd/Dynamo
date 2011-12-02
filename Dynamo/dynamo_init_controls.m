@@ -24,7 +24,7 @@ fprintf('\nTimeslots: %d\nControls: %d + tau\n', n_timeslots, n_controls);
 
 
 %% Check the validity of the parameters.
-% NOTE: This code needs to change when controls_transform changes.
+% NOTE: This code needs to change when control_transform changes.
 
 % Check control types
 if nargin < 3
@@ -68,7 +68,7 @@ OC.config.initial_controls = controls;
 OC.seq.raw_controls = controls;
 
 % transform the controls
-[OC.seq.tau, OC.seq.tau_deriv, OC.seq.control, OC.seq.control_deriv] = controls_transform(controls);
+[OC.seq.tau, OC.seq.tau_deriv, OC.seq.control, OC.seq.control_deriv] = control_transform(controls);
 
 
 %% Set up caching
@@ -103,7 +103,7 @@ OC.cache.L{end} = OC.cache.L_end;
 % U{1} and L{end} are never stale and never recomputed.
 OC.cache.H_is_stale = true(temp);
 OC.cache.P_is_stale = true(temp);
-OC.cache.U_is_stale = [false, true(temp)]; % Updates for H via 'controls_update' get propagated automatically
+OC.cache.U_is_stale = [false, true(temp)]; % Updates for H via 'control_update' get propagated automatically
 OC.cache.L_is_stale = [true(temp), false];
 
 % Here we indicate which values we need to have up-to-date

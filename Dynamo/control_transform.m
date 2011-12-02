@@ -1,4 +1,4 @@
-function [tau, tau_deriv, control, control_deriv] = controls_transform(raw_control)
+function [tau, tau_deriv, control, control_deriv] = control_transform(raw_control)
 %  Diagonal transformation function for the controls.
 %
 % Given raw controls r_k, computes the transformed controls c_k(r_k) and their derivatives.

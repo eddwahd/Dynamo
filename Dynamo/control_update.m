@@ -1,5 +1,5 @@
-function controls_update(x, control_mask)
-% controls_update  Updates selected controls.
+function control_update(x, control_mask)
+% control_update  Updates selected controls.
 %
 %  x: vector of control values, control_mask: corresponding mask.
 %
@@ -34,6 +34,6 @@ if any(changed_t_mask)
     OC.cache.g = NaN;
 
     % transform the controls
-    [OC.seq.tau, OC.seq.tau_deriv, OC.seq.control, OC.seq.control_deriv] = controls_transform(OC.seq.raw_controls);
+    [OC.seq.tau, OC.seq.tau_deriv, OC.seq.control, OC.seq.control_deriv] = control_transform(OC.seq.raw_controls);
 end
 

@@ -1,4 +1,4 @@
-function ret = controls_get(control_mask)
+function ret = control_get(control_mask)
 global OC;
 
 if nargin == 0
