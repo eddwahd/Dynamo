@@ -274,7 +274,7 @@ particular~$A \in \mf{u}(N)$).
 Expanding the operator $\exp(A)$ in the eigenbasis~$\{\ket{\lambda_k}\}_{k=1}^N$ and then vectorizing it, we
 obtain the Jacobian matrix
 \begin{align}
-J_{ba,j}(\exp)|_A
+J_{ab,j}(\exp)|_A
 := \left.\left(\bra{\lambda_a}  \pde{\exp(A)}{a_j} \ket{\lambda_b} \right) \right|_A
 = e^{\lambda_a} \gamma(\lambda_b - \lambda_a) \bra{\lambda_a} B_j \ket{\lambda_b},
 \end{align}
@@ -284,25 +284,29 @@ where the final expression was obtained using Eq.~\eqref{eq:expgrad} from the pr
 Define $\Lambda := \sum_i \ketbra{\lambda_i}{i}$ and $\Gamma_{xy} := \gamma(\lambda_y-\lambda_x)$.
 \begin{align}
 \notag
-\VEC_{\lambda}^{-1}\left(J(\exp)|_A \: \VEC(D)\right)
-&= \sum_{abj} \ketbra{\lambda_a}{\lambda_b} \: J_{ba,j}(\exp)|_A \: \VEC(B_j)^\dagger \VEC(D)\\
+\VEC^{-1}\left(J(\exp)|_A \: \VEC(D)\right)
+&= \sum_{abj} \ketbra{\lambda_a}{\lambda_b} \: J_{ab,j}(\exp)|_A \: \VEC(B_j)^\dagger \VEC(D)\\
 \notag
 &= \sum_{abj} \ketbra{\lambda_a}{\lambda_b}
 e^{\lambda_a} \gamma(\lambda_b - \lambda_a) \bra{\lambda_a} B_j \ket{\lambda_b} \: \inprod{B_j}{D}\\
 \notag
 &= \sum_{ab} \ketbra{\lambda_a}{\lambda_b} \: e^{\lambda_a} \gamma(\lambda_b -\lambda_a) \bra{\lambda_a}
 D \ket{\lambda_b}
-= \sum_{ab} \ket{\lambda_a} e^{\lambda_a} \Gamma_{ab} (\Lambda^\dagger
-D \Lambda)_{ab} \bra{\lambda_b}\\
-&= \sum_{ab} e^A  \ketbra{\lambda_a}{a} \left(\Gamma \odot
-(\Lambda^\dagger D \Lambda) \right) \ketbra{b}{\lambda_b}
-= e^A \Lambda \left(\Gamma \odot (\Lambda^\dagger D \Lambda) \right) \Lambda^\dagger.
+= \sum_{ab} \ketbra{\lambda_a}{\lambda_b} e^{\lambda_a} \Gamma_{ab} (\Lambda^\dagger
+D \Lambda)_{ab}\\
+&= \sum_{ab} \ketbra{\lambda_a}{\lambda_b} e^{\lambda_a} \bra{a} \left(\Gamma \odot
+(\Lambda^\dagger D \Lambda) \right) \ket{b}\\
+&= \sum_{ab} e^A \ketbra{\lambda_a}{a} \left(\Gamma \odot
+(\Lambda^\dagger D \Lambda) \right) \ketbra{b}{\lambda_b}\\
+&= e^A \Lambda \left(\Gamma \odot
+(\Lambda^\dagger D \Lambda) \right) \Lambda^\dagger.
 \end{align}
 $\odot$ and $\oslash$ denote an elementwise (Hadamard) product and division.
 With $A = \log(U)$, Eq.~\eqref{eq:invJ} now gives
 \be
-\VEC^{-1}\left(J(\log)|_U \: \VEC_{\lambda}(X)\right)
-= \Lambda \left((\Lambda^\dagger U^\dagger X \Lambda)
+\VEC^{-1} \left( J(\log)|_U \: \VEC(X) \right)
+= 
+\Lambda \left((\Lambda^\dagger U^\dagger X \Lambda)
 \oslash \Gamma\right) \Lambda^\dagger,
 \ee
 % check inverse; works both ways
@@ -314,15 +318,15 @@ and finally
 = J(P)|_{\log(V^\dagger U_f)} J(\log)|_{V^\dagger U_f} J(V^\dagger U_f)|_{f} \: \vec{e}_{rk}\\
 \notag
 &= P \: J(\log)|_{V^\dagger U_f}
-\left. \left( V^\dagger \pde{}{\alpha_{rk}} U_f \right)\right|_{f}\\
+\VEC \left. \left( V^\dagger \pde{}{\alpha_{rk}} U_f \right)\right|_{f}\\
 &= P \VEC \left( 
-\Lambda \left((\Lambda^\dagger U_f^\dagger V \VEC^{-1}
+\Lambda \left((\Lambda^\dagger U_f^\dagger V
 \left. \left( V^\dagger \pde{}{\alpha_{rk}} U_f \right)\right|_{f}
 \Lambda) \oslash \Gamma \right) \Lambda^\dagger
 \right),
 \end{align}
-where $\Lambda$ and $\Gamma$ are obtained from the eigendecomposition
-of~$V^\dagger U_f$ as explained above.
+where $\vec{e}_{rk}$ is an unit vector, and $\Lambda$ and $\Gamma$ are obtained from the eigendecomposition
+of~$\log(V^\dagger U_f)$ as explained above.
 
 TODO finish
 

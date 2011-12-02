@@ -166,20 +166,35 @@ fprintf('Optimization system dimension: %d\n', length(OC.system.X_final));
 OC.system.norm2 = real(inprod(OC.system.X_final, OC.system.X_final));
 
 
+function check_B()
+% Checks if the control operators are orthonormal.
+
+  B = OC.system.B;
+  n_controls = length(B);
+  M = zeros(n_controls);
+  for j = 1:n_controls
+    for k = 1:n_controls
+      M(j,k) = inprod(B{j}, B{k});
+    end
+  end
+  % FIXME what about dissipative controls? superoperators?
+  OC.seq.M = M;
+end
+
 
 function system_vec()
 % Set up the vec representation for initial and final states in a Liouville space.
 
-% state vectors are converted to state operators
-if size(initial, 2) == 1
+  % state vectors are converted to state operators
+  if size(initial, 2) == 1
     initial = initial * initial';
-end
-if size(final, 2) == 1
+  end
+  if size(final, 2) == 1
     final = final * final';
-end
+  end
 
-OC.system.X_initial = vec(initial);
-OC.system.X_final   = vec(final);
+  OC.system.X_initial = vec(initial);
+  OC.system.X_final   = vec(final);
 end
 
 
