@@ -56,5 +56,16 @@ for z = 1:length(Ts)
 
         temp = -OC.seq.tau(t) * OC.seq.control_deriv(t, c) * OC.cache.L{t+1} * dPdu * OC.cache.U{t};
     end
-    J(:, z) = vec(v * ((v' * temp * v) ./ zeta) * v'); 
+    J(:, z) = vec(P(v * ((v' * temp * v) ./ zeta) * v'));
+end
+end
+
+
+function A = P(A)
+% Projects A from u(n) into the traceless subalgebra, su(n).
+% Essentially this eliminates the global phase.
+
+  n = length(A);
+  temp = trace(A) / n;
+  A = A - temp * eye(n);
 end

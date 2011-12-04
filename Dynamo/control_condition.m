@@ -4,8 +4,8 @@ function x = control_condition(f)
 % Ville Bergholm 2011
   
   global OC;
-  q = 10;
-  f = logspace(0, 3, 40);
+  q = 5;
+  f = logspace(0, 3, 25);
   cond = zeros(size(f));
   for k = 1:length(f)
     cond(k) = find_cond(OC.seq, f(k), q);
@@ -20,7 +20,7 @@ function x = control_condition(f)
   options = optimset('MaxIter', 100, 'MaxFunEvals', 70, 'TolX', 1, 'FunValCheck', 'on');
   %'OutputFcn', @monitor_func,...
   %'Display',   'off');
-  [x, fval, eflag] = fminbnd(@(x)find_cond(OC.seq, x, 10), 1, 1e3, options)
+  [x, fval, eflag] = fminbnd(@(x)find_cond(OC.seq, x, 40), 1, 1e3, options)
 end
 
 
@@ -95,7 +95,7 @@ function c = conditioning(L, J)
 % The norm of the least-squares solution of L + J*p = 0
 % (using the left pseudoinverse of J since J has more rows than cols)
 %p = (J' * J) \ (J' * -L);
-    p = pinv(J);
+    p = pinv(J) * -L;
     c = norm(p);
 end
 

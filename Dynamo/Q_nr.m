@@ -17,7 +17,7 @@ global OC
 % Try to figure out which k requires least additional computation.
 k = g_setup_recalc();
 cache_refresh();
-Q = logm(OC.cache.L{k} * OC.cache.U{k}); % FIXME add P
+Q = P(logm(OC.cache.L{k} * OC.cache.U{k}));
   
 %OC.cache.g_is_stale = false;
 %OC.cache.g = g;
@@ -27,3 +27,15 @@ if nargin == 1
 end
 
 Q = vec(Q);
+end
+
+
+function A = P(A)
+% Projects A from u(n) into the traceless subalgebra, su(n).
+% Essentially this eliminates the global phase.
+
+  n = length(A);
+  temp = trace(A) / n;
+  A = A - temp * eye(n);
+end
+
