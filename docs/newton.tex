@@ -74,7 +74,7 @@ quantum gate optimization algorithm.
 \subsection{Definitions}
 Assume a system with the Hamiltonian
 \be
-H(t) = A +\sum_{r=1}^R B_r f_r(t),
+i H(t) = A +\sum_{r=1}^R B_r f_r(t),
 \ee
 where $A$~is the drift term, $B_r$~are the control terms and
 $f_r(t)$ are the control fields. They can be discretized by expanding
@@ -94,8 +94,8 @@ In this case the propagator is of a simple product form:
 \begin{align*}
 U_f(T)
 &= \mathcal{T} \exp\left(\frac{1}{i\hbar} \int_0^T H(t) \wrt{t} \right)
-=  \mathcal{T} \exp\left(\frac{1}{i\hbar} \sum_{n=1}^N \int_{t_{n-1}}^{t_n} \left(A +\sum_{rk} B_r \alpha_{rk} b_k(t)\right) \wrt{t} \right)\\
-&= \mathcal{T} \exp\left(\frac{1}{i\hbar} \sum_{n=1}^N \int_{t_{n-1}}^{t_n} \left(A +\sum_{r} B_r \alpha_{rn} \right) \wrt{t} \right)
+=  \mathcal{T} \exp\left(- \frac{1}{\hbar} \sum_{n=1}^N \int_{t_{n-1}}^{t_n} \left(A +\sum_{rk} B_r \alpha_{rk} b_k(t)\right) \wrt{t} \right)\\
+&= \mathcal{T} \exp\left(- \frac{1}{\hbar} \sum_{n=1}^N \int_{t_{n-1}}^{t_n} \left(A +\sum_{r} B_r \alpha_{rn} \right) \wrt{t} \right)
 = \mathcal{T} \exp\left(\frac{1}{i\hbar} \sum_{n=1}^N \tau_n H_n \right)\\
 &= \exp \left(\frac{\tau_N H_N}{i\hbar}\right)
 \exp \left(\frac{\tau_{N-1} H_{N-1}}{i\hbar}\right) \cdots
@@ -215,14 +215,21 @@ and we have
 =
 \bra{\lambda_a} B_r \ket{\lambda_b}
 \frac{e^{\lambda_a} - e^{\lambda_b}}{\lambda_a - \lambda_b}\\
+\notag
 &=
 \bra{\lambda_a} B_r \ket{\lambda_b} e^{\lambda_b} \gamma(\lambda_a - \lambda_b)
 =
-\bra{\lambda_a} B_r \ket{\lambda_b} e^{\lambda_a} \gamma(\lambda_b - \lambda_a),
+\bra{\lambda_a} B_r \ket{\lambda_b} e^{\lambda_a} \gamma(\lambda_b - \lambda_a)\\
+&=
+\bra{\lambda_a} B_r \ket{\lambda_b} e^{\lambda_a} \Gamma_{ab}
+= \bra{\lambda_a} B_r \ket{\lambda_b} \zeta_{ab}
 \label{eq:expgrad}
 \end{align}
 where
 \be
+\zeta_{ab} := \frac{e^{\lambda_a} - e^{\lambda_b}}{\lambda_a - \lambda_b},
+\qquad
+\Gamma_{ab} := \gamma(\lambda_b-\lambda_a) \qquad \text{and} \qquad
 \gamma(z) := \frac{e^z - 1}{z}.
 \ee
 By continuously extending the defintion to~$\gamma(0) := 1$, this
@@ -231,8 +238,6 @@ expression also works in the case where~$\lambda_a = \lambda_b$.
 
 
 \section{The linearization function $\mf{L}$}
-
-
 
 Let $V$ be the target gate, $U_f$ the actual propagator and $P$ a
 projector into the traceless subspace of~$\mf{u}(N)$. The gate
@@ -276,21 +281,20 @@ obtain the Jacobian matrix
 \begin{align}
 J_{ab,j}(\exp)|_A
 := \left.\left(\bra{\lambda_a}  \pde{\exp(A)}{a_j} \ket{\lambda_b} \right) \right|_A
-= e^{\lambda_a} \gamma(\lambda_b - \lambda_a) \bra{\lambda_a} B_j \ket{\lambda_b},
+= e^{\lambda_a} \Gamma_{ab} \bra{\lambda_a} B_j \ket{\lambda_b},
 \end{align}
 ($a,b$: eigenbasis, $j$: antihermitian basis)
 where the final expression was obtained using Eq.~\eqref{eq:expgrad} from the previous section.
-
-Define $\Lambda := \sum_i \ketbra{\lambda_i}{i}$ and $\Gamma_{xy} := \gamma(\lambda_y-\lambda_x)$.
+Now define $\Lambda := \sum_i \ketbra{\lambda_i}{i}$.
 \begin{align}
 \notag
 \VEC^{-1}\left(J(\exp)|_A \: \VEC(D)\right)
 &= \sum_{abj} \ketbra{\lambda_a}{\lambda_b} \: J_{ab,j}(\exp)|_A \: \VEC(B_j)^\dagger \VEC(D)\\
 \notag
 &= \sum_{abj} \ketbra{\lambda_a}{\lambda_b}
-e^{\lambda_a} \gamma(\lambda_b - \lambda_a) \bra{\lambda_a} B_j \ket{\lambda_b} \: \inprod{B_j}{D}\\
+e^{\lambda_a} \Gamma_{ab} \bra{\lambda_a} B_j \ket{\lambda_b} \: \inprod{B_j}{D}\\
 \notag
-&= \sum_{ab} \ketbra{\lambda_a}{\lambda_b} \: e^{\lambda_a} \gamma(\lambda_b -\lambda_a) \bra{\lambda_a}
+&= \sum_{ab} \ketbra{\lambda_a}{\lambda_b} \: e^{\lambda_a} \Gamma_{ab} \bra{\lambda_a}
 D \ket{\lambda_b}
 = \sum_{ab} \ketbra{\lambda_a}{\lambda_b} e^{\lambda_a} \Gamma_{ab} (\Lambda^\dagger
 D \Lambda)_{ab}\\
@@ -319,17 +323,66 @@ and finally
 \notag
 &= P \: J(\log)|_{V^\dagger U_f}
 \VEC \left. \left( V^\dagger \pde{}{\alpha_{rk}} U_f \right)\right|_{f}\\
+\notag
 &= P \VEC \left( 
-\Lambda \left((\Lambda^\dagger U_f^\dagger V
+\Lambda \left( \left(\Lambda^\dagger U_f^\dagger V
 \left. \left( V^\dagger \pde{}{\alpha_{rk}} U_f \right)\right|_{f}
-\Lambda) \oslash \Gamma \right) \Lambda^\dagger
-\right),
+\Lambda \right) \oslash \Gamma \right) \Lambda^\dagger
+\right)\\
+&= P \VEC \left( 
+\Lambda \left( \left(\Lambda^\dagger
+\left. \left( V^\dagger \pde{}{\alpha_{rk}} U_f \right)\right|_{f}
+\Lambda \right) \oslash \zeta \right) \Lambda^\dagger
+\right)
+\label{eq:gradientL}
 \end{align}
 where $\vec{e}_{rk}$ is an unit vector, and $\Lambda$ and $\Gamma$ are obtained from the eigendecomposition
 of~$\log(V^\dagger U_f)$ as explained above.
 
-TODO finish
+We also have
+\be
+\left. \left( V^\dagger \pde{}{\alpha_{rk}} U_f \right)\right|_{f}
+=
+V^\dagger P_N P_{N-1} \cdots P_{k+1} \left. \pde{P_k}{\alpha_{rk}}
+\right|_{f} P_{k-1} \cdots P_1,
+\ee
+and
+\be
+\left. \pde{P_k}{\alpha_{rk}} \right|_{f}
+=
+\sum_{ab} \ketbra{\hat{\lambda}_a}{\hat{\lambda}_b}  e^{\hat{\lambda}_a} \hat{\Gamma}_{ab} \bra{\hat{\lambda}_a} (-\tau_k B_r) \ket{\hat{\lambda}_b}
+=
+-\tau_k P_k \hat{\Lambda} \left(\hat{\Gamma} \odot
+(\hat{\Lambda}^\dagger B_r \hat{\Lambda}) \right) \hat{\Lambda}^\dagger.
+\ee
+NOTE that the $\hat{\Lambda}$ and $\hat{\Gamma}$ matrices here are different from
+the ones in Eq.~\eqref{eq:gradientL}, and obtained from the
+eigendecomposition of~$-\tau_k H_k$.
 
+
+Computing the Jacobian:
+\begin{align*}
+\pde{}{\alpha_{rk}} \mf{L}(f)
+&= P \VEC \left( 
+\Lambda \left( \left(\Lambda^\dagger
+U_{k-1}^\dagger \left[
+-\tau_k \hat{\Lambda} \left(\hat{\Gamma} \odot
+(\hat{\Lambda}^\dagger B_r \hat{\Lambda}) \right) \hat{\Lambda}^\dagger
+\right] U_{k-1}
+\Lambda \right) \oslash \Gamma \right) \Lambda^\dagger
+\right)\\
+&= P \VEC \left( 
+\Lambda \left( \left(\Lambda^\dagger
+Q_{k}
+\left[
+-\tau_k \hat{\Lambda} \left(\hat{\zeta} \odot
+(\hat{\Lambda}^\dagger B_r \hat{\Lambda}) \right)
+\hat{\Lambda}^\dagger
+\right]
+U_{k-1}
+\Lambda \right) \oslash \zeta \right) \Lambda^\dagger
+\right).
+\end{align*}
 %\begin{acknowledgments}
 %\end{acknowledgments}
 

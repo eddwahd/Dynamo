@@ -85,7 +85,7 @@ dynamo_init('SB state', initial, final, H_drift, H_ctrl, L_drift)
 
 
 if 1
-    T = 10; % How much time do we have to drive the system? The value specified here has empirically been shown to work well
+    T = 10; % How much time do we have to drive the system?
     timeslots = 20;
     
     % Time-slot configuration. Can also be a vector of delta t:s.

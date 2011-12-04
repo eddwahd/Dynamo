@@ -45,14 +45,17 @@ H_drift = (1/2) * (kron(SX,SX) + kron(SY,SY) + kron(SZ,SZ));
 
 % Control Hamiltonians / Liouvillians
 %H_ctrl = {kron(SX,I), kron(SY,I), kron(I,SX), kron(I,SY), -0.01 * superop_lindblad(dephase2)};
-H_ctrl = {kron(SX,I), kron(SY,I), kron(I,SX), kron(I,SY)};
+%H_ctrl = {kron(SX,I), kron(SY,I), kron(I,SX), kron(I,SY)};
+H_ctrl = {kron(SX,I), kron(SY,I)};
 
-% For dissipative controls we normally want the control field to be nonnegative.
-squared_controls = logical([0, 0, 0, 0]);
+% transformed controls?
+control_type = '..';
+control_par = cell(size(H_ctrl));
+%control_par = {[], [], [0, 1]};
 
 % noise/dissipation
 % FIXME NOTE the minus sign (different convention)
-L_drift = -0.002 * superop_lindblad(depolarize1) -0.0013 * superop_lindblad(depolarize2);
+%L_drift = -0.002 * superop_lindblad(depolarize1) -0.0013 * superop_lindblad(depolarize2);
 
 initial = eye(dim);
 final = qft(n_spins);
@@ -75,7 +78,7 @@ dynamo_init('S gate', initial, final, H_drift, H_ctrl)
 
 
 if 1
-    T = 6; % How much time do we have to drive the system? The value specified here has empirically been shown to work well
+    T = 6; % How much time do we have to drive the system?
     timeslots = 10;
     
     % Time-slot configuration. Can also be a vector of delta t:s.
@@ -101,11 +104,11 @@ if 1
     end
     initial_controls = [initial_controls, tau_c];
     
-    dynamo_init_controls(initial_controls, tau_par, squared_controls);
+    dynamo_init_controls(initial_controls, tau_par, control_type, control_par);
 
 else
     % reuse the previous, optimized controls
-    dynamo_init_controls(OC.seq.raw_controls, OC.seq.par, OC.seq.squared);
+    dynamo_init_controls(OC.seq.raw_controls, OC.seq.par, sdfsds);
 
     % Which time slots do you want to modify ? All of them
     control_mask = true(size(OC.seq.raw_controls));
@@ -124,4 +127,3 @@ termination_reason = search_BFGS();
 analyze();
 
 end
-

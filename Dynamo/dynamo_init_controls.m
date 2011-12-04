@@ -64,7 +64,7 @@ end
 
 %% Set up controls
 
-OC.config.initial_controls = controls;
+OC.opt.initial_controls = controls;
 OC.seq.raw_controls = controls;
 
 % transform the controls
@@ -125,4 +125,5 @@ OC.cache.L_needed_now = [false(temp), false];
 
 OC.cache.g_is_stale = true;
 OC.cache.g = NaN;
+end
 

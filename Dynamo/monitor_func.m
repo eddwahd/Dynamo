@@ -43,4 +43,5 @@ end
 OC.stats.Q_func(end+1) = -optimValues.fval; % maximize vs. minimize...
 OC.stats.wall_time(end+1) = wt;
 OC.stats.cpu_time(end+1)  = ct;
+OC.stats.fluence(end+1) = control_fluence(OC.seq);
 end

@@ -166,8 +166,8 @@ fprintf('Optimization system dimension: %d\n', length(OC.system.X_final));
 OC.system.norm2 = real(inprod(OC.system.X_final, OC.system.X_final));
 
 
-function check_B()
-% Checks if the control operators are orthonormal.
+function inprod_B()
+% Computes the inner product matrix of the control operators.
 
   B = OC.system.B;
   n_controls = length(B);
@@ -208,6 +208,7 @@ function system_hilbert()
   for k=1:n_controls
       OC.system.B{k} = 1i * H_ctrl{k};
   end
+  inprod_B();
 end
 
 

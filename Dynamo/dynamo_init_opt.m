@@ -28,3 +28,4 @@ OC.opt.cpu_start = cputime();
 OC.stats.Q_func = [];
 OC.stats.wall_time = [];
 OC.stats.cpu_time  = [];
+OC.stats.fluence  = [];
