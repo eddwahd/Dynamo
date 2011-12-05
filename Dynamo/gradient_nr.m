@@ -15,7 +15,7 @@ if ~isfield(OC.cache,'H_v')
 end
 
 % compute the eigenvalue factors for the target function
-[v, zeta] = eig_factors(logm(Q), true);
+[v, zeta] = eig_factors(Q, true);
 
 
 % request calculations

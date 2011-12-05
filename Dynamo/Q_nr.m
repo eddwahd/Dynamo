@@ -17,16 +17,15 @@ global OC
 % Try to figure out which k requires least additional computation.
 k = g_setup_recalc();
 cache_refresh();
-Q = P(logm(OC.cache.L{k} * OC.cache.U{k}));
+Q = logm(OC.cache.L{k} * OC.cache.U{k});
   
-%OC.cache.g_is_stale = false;
-%OC.cache.g = g;
-    
 if nargin == 1
     J = gradient_nr(control_mask, Q);
 end
 
-Q = vec(Q);
+Q = vec(P(Q));
+%OC.cache.g_is_stale = false;
+%OC.cache.g = g;
 end
 
 
