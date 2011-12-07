@@ -26,8 +26,6 @@ control_deriv = zeros(temp);
 n_controls = length(OC.seq.control_type);
 
 for k=1:n_controls
-    par = OC.seq.control_par{k};
-    
     switch OC.seq.control_type(k)
       case '.'  % no transformation
         control(:, k) = raw_control(:, k);
@@ -38,6 +36,7 @@ for k=1:n_controls
         control_deriv(:, k) = 2 * raw_control(:, k);
         
       case 'm'  % minimum and delta, u_k = min + delta * 0.5 * (1 + cos(r_k))
+        par = OC.seq.control_par{k};
         control(:, k) = par(1) +par(2) * 0.5 * (1 + cos(raw_control(:, k)));
         control_deriv(:, k) = -par(2) * 0.5 * sin(raw_control(:, k));
       

@@ -12,52 +12,45 @@ SY = [0 -1i; 1i 0];
 SZ = [1 0; 0 -1];
 I = speye(2,2);
 
-SP = (SX +1i*SY)/2;
-
 CNOT = [1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0];
 
 
 %% Define the problem
 
 fprintf('Test suite problem %d:\n  ', p)
-switch p
-  case {1, 2, 3, 4}
-    % Ising chain
-    q = 2;
-    fprintf('Ising chain, %d qubits, XY control.\n', q)
-    H = ising(q, 1);
-    C = control_XY(q);
-    final = CNOT;
+if 1 <= p && p <= 12
+  % 1-12: Ising chain
+  switch p
+    case {1, 2, 3, 4}
+      q = 2;
+      final = CNOT;
 
-  case {5, 6}
-    q = 3;
-    fprintf('Ising chain, %d qubits, XY control.\n', q)
-    H = ising(q, 1);
-    C = control_XY(q);
-    final = qft(q);
+    case {5, 6}
+      q = 3;
+      final = qft(q);
     
-  case {7, 8, 9}
-    q = 4;
-    fprintf('Ising chain, %d qubits, XY control.\n', q)
-    H = ising(q, 1);
-    C = control_XY(q);
-    final = qft(q);
+    case {7, 8, 9}
+      q = 4;
+      final = qft(q);
 
-  case {10, 11, 12}
-    q = 5;
-    fprintf('Ising chain, %d qubits, XY control.\n', q)
-    H = ising(q, 1);
-    C = control_XY(q);
-    final = qft(q);
+    case {10, 11, 12}
+      q = 5;
+      final = qft(q);
+  end    
+  fprintf('Ising chain, %d qubits, XY control.\n', q)
+  dim = 2 * ones(1, q);
+  H = heisenberg(dim, 2*[0 0 1]);
+  C = control(dim, 'xy');
 
+else
+  switch p
   case {13, 14}
-    q = 4;
-    fprintf('Cluster state, %d qubits, XY control.\n', q)
-    H_CS = ising(q, 1);
-    H_CS = H_CS + mkron(0.5 * SZ, speye(4,4), SZ);
+    dim = [2 2 2 2];
+    fprintf('Completely ZZ-coupled graph, 4 qubits, XY control.\n')
+    H_CS = heisenberg(dim, 2*[0 0 1]) +mkron(0.5 * SZ, speye(4,4), SZ);
     H = H_CS +mkron(0.5 * SZ, I, SZ, I) +mkron(0.5 * I, SZ, I, SZ);
-    C = control_XY(q);
-    final = expm(-1j * pi/2 * H_CS);
+    C = control(dim, 'xy');
+    final = expm(-1j * pi/2 * H_CS); % target: C_4 cluster state
     
   case {15, 16}
     % NV centers in diamond
@@ -70,51 +63,49 @@ switch p
 
   case {17, 18}
     q = 5;
+    dim = 2 * ones(1, q);
     fprintf('Ising chain with Stark shift, %d qubits, uniform XY control.\n', q)
-    H = ising(q, 1) + sum_op(q, -SZ, 2+(1:n));
-    C{1} = sum_op(q, 0.5*SX);
-    C{2} = sum_op(q, 0.5*SY);
+    H = heisenberg(dim, 2*[0 0 1]) + sum_op(q, -SZ, 2+(1:q));
+    C = {sum_op(q, 0.5*SX), sum_op(q, 0.5*SY)};
     final = qft(q);
     
   case 19
     q = 5;
+    dim = 2 * ones(1, q);
     fprintf('Heisenberg chain with bias, %d qubits, Z control.\n', q)
-    H = heisenberg(q, 1) + sum_op(q, -10*SX);
-    C = control_Z(q);
+    H = heisenberg(dim, 2*[1 1 1]) + sum_op(q, -10*SX);
+    C = control(dim, 'z');
     final = qft(q);
     
   case {20, 21}
-    if (p == 20)
-        q = 3;
-        C = control_XY(q, 1);
-    else
-        q = 4;
-        C = control_XY(q, 2);
-    end
+    q = 3 +p -20;
+    dim = 2 * ones(1, q);
     fprintf('Heisenberg chain, %d qubits, XY control at one end.\n', q)
-    H = heisenberg(q, 1);
-    final = rand_U(2^q);
+    H = heisenberg(dim, 2*[1 1 1]);
+    C = control(dim, 'xy', q - 2);
+    final = rand_U(prod(dim));
 
   case {22, 23}
-    if (p == 22)
+    if p == 22
         d = 13;
     else
         d = 7;
     end
-    fprintf('A single spin-%g, Jz/Jx control.\n', (d-1)/2)
+    fprintf('A single spin-%g, J_z, J_x control.\n', (d-1)/2)
     J = angular_momentum(d);
     H = J{3}^2;
-    C{1} = J{3};
-    C{2} = J{1};
+    C = {J{3}, J{1}};
     final = rand_U(d);
     
   otherwise
     error('Unknown problem.');
 end
+end
 fprintf('\n')
 initial = eye(size(final));
 
-dynamo_init('task1', initial, final, H, C);
+dynamo_init('S gate', initial, final, H, C)
+
 
 
 %% Optimization options
@@ -124,73 +115,22 @@ timeslots = [30, 40, 128, 64, 120, 140, 128, 128, 64, 300, 300, 64,...
 T = [2, 2, 3, 4, 6, 7, 10, 12, 20, 15, 20, 25,...
      7, 12, 2, 5, 125, 150, 30, 15, 40, 15, 5];
 
-timeslots = timeslots(p);
-T = T(p);
 
-
-% Timeslot configuration.
-normal_controls = [timeslots, length(C)];
-t_controls = [timeslots, 1];
-
-% Generate random initial controls
-initial_controls = 0.2 * (rand(normal_controls) - 0.5);
-
-% fixed tau
-tau_par = [T, 0];
-tau_c = zeros(t_controls);
-control_mask = [true(normal_controls), false(t_controls)];
-
-initial_controls = [initial_controls, tau_c];
-    
-dynamo_init_controls(initial_controls, tau_par);
+% Set up random initial controls.
+control_mask = control_rand(T(p), timeslots(p), false);
 dynamo_init_opt(control_mask);
 
 
-function [H] = ising(n, J)
-% Ising spin chain Hamiltonian for n spin-1/2:s
+%% Now do the actual search
 
-    temp = J/2 * kron(SZ, SZ);
-    N = 2^n;
-    H = sparse(N, N);
-    for k=2:n
-        H = H + mkron(speye(2^(k-2)), temp, speye(2^(n-k)));
-    end
+fprintf('\nOptimizing algorithm: GRAPE (BFGS 2nd order update scheme, updating all time slices concurrently).\n\n    Please wait, this may take a while... \n\n'); drawnow;
+
+OC.config.BFGS = struct('fminopt', struct('Display', 'off'));
+termination_reason = search_BFGS();
+
+analyze();
 end
 
-
-function [H] = heisenberg(n, J)
-% Heisenberg spin chain Hamiltonian for n spin-1/2:s
-
-    temp = J/2 * (kron(SX,SX) + kron(SY,SY) + kron(SZ,SZ));
-    N = 2^n;
-    H = sparse(N, N);
-    for k=2:n
-        H = H + mkron(speye(2^(k-2)), temp, speye(2^(n-k)));
-    end
-end
-
-
-function [C] = control_XY(n, s)
-% X and Y controls, s first qubits
-    if nargin < 2
-        s = n;
-    end
-    for k=1:s
-        C{2*k-1} = mkron(speye(2^(k-1)), 0.5 * SX, speye(2^(n-k)));
-        C{2*k}   = mkron(speye(2^(k-1)), 0.5 * SY, speye(2^(n-k)));
-    end
-end
-
-
-function [C] = control_Z(n, s)
-% Z controls, s first qubits
-    if nargin < 2
-        s = n;
-    end
-    for k=1:s
-        C{k} = mkron(speye(2^(k-1)), 0.5 * SZ, speye(2^(n-k)));
-    end
-end
 
 
 function H = sum_op(n, op, mult)
@@ -205,5 +145,3 @@ function H = sum_op(n, op, mult)
         H = H + mkron(speye(2^(k-1)), mult(k)*op, speye(2^(n-k)));
     end
 end
-end
-

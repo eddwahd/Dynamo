@@ -4,11 +4,11 @@ function x = control_condition(f)
 % Ville Bergholm 2011
   
   global OC;
-  q = 5;
-  f = logspace(0, 3, 25);
-  cond = zeros(size(f));
+  q = 20;
+  f = logspace(0, 4, 16);
+  cond = zeros(length(f), q);
   for k = 1:length(f)
-    cond(k) = find_cond(OC.seq, f(k), q);
+    cond(k,:) = find_cond(OC.seq, f(k), q);
   end
   figure
   loglog(f, cond, '.');
@@ -20,7 +20,7 @@ function x = control_condition(f)
   options = optimset('MaxIter', 100, 'MaxFunEvals', 70, 'TolX', 1, 'FunValCheck', 'on');
   %'OutputFcn', @monitor_func,...
   %'Display',   'off');
-  [x, fval, eflag] = fminbnd(@(x)find_cond(OC.seq, x, 40), 1, 1e3, options)
+  [x, fval, eflag] = fminbnd(@(x)sum(find_cond(OC.seq, x, 40))/q, 1, 1e3, options)
 end
 
 
@@ -28,7 +28,7 @@ function ret = find_cond(seq, f, q)
 % compute the conditioning for random controls with given fluence
 
 % average over several random control sets
-  ret = 0;
+  ret = zeros(1,q);
   for j = 1:q
     raw = rand_controls_with_fluence(seq, f);
 
@@ -37,11 +37,8 @@ function ret = find_cond(seq, f, q)
     control_update(raw, [true(size(raw)), false(n_timeslots, 1)]);
 
     [Q, J] = Q_nr(true(size(seq.raw_controls)));
-    cond = conditioning(Q, J);
-
-    ret = ret + cond;
+    ret(j) = conditioning(Q, J);
   end
-  ret = ret / q;
 end
 
 
@@ -93,10 +90,12 @@ end
 function c = conditioning(L, J)
 % Compute the ill-conditioning.
 % The norm of the least-squares solution of L + J*p = 0
-% (using the left pseudoinverse of J since J has more rows than cols)
-%p = (J' * J) \ (J' * -L);
-    p = pinv(J) * -L;
-    c = norm(p);
+
+  % (using the left pseudoinverse of J since J has more rows than cols)
+  %p = (J' * J) \ (J' * -L);
+  p = pinv(J) * -L;
+  %p = J \ -L;  % in MATLAB, this does a least squares fit too(!)
+  c = norm(p);
 end
 
 

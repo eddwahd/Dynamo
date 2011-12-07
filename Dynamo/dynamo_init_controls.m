@@ -1,9 +1,8 @@
-function dynamo_init_controls(controls, tau_par, control_type, control_par)
+function dynamo_init_controls(controls, tau_par)
 
-%  tau_par: vector with the min. durations of the time slots, or a scalar denoting the min. total time.
-%  controls: initial control values, size == [n_timeslots, n_controls].
-%  squared: optional, boolean vector denoting which controls should be squared (nonnegative).
-%
+%  controls: initial control values, size == [n_timeslots, n_controls + 1].
+%  tau_par: [T_min, T_delta], either a single entry with the totals or one such entry for each time slot.
+
 %  The initial and final states need to be set before this function is called.
 
 
@@ -12,12 +11,11 @@ global OC;
 
 % Number of time slices for the piecewise constant controls.
 n_timeslots = size(controls, 1);
-
-% Number of control fields.
-% The last column are the tau controls.
+% Number of control fields. The last column are the tau controls.
 n_controls  = size(controls, 2) - 1;
+
 if n_controls ~= length(OC.system.B)
-    error('Number of control Hamiltonians does not match the number of controls given.')
+    error('Number of controls given does not match the number of control Hamiltonians.')
 end
 
 fprintf('\nTimeslots: %d\nControls: %d + tau\n', n_timeslots, n_controls);
@@ -25,29 +23,6 @@ fprintf('\nTimeslots: %d\nControls: %d + tau\n', n_timeslots, n_controls);
 
 %% Check the validity of the parameters.
 % NOTE: This code needs to change when control_transform changes.
-
-% Check control types
-if nargin < 3
-    control_type = char(zeros(1, n_controls) + '.');
-elseif length(control_type) ~= n_controls
-    error('Length of the control_type vector does not match the number of controls.')
-end
-OC.seq.control_type = control_type;
-
-if any(control_type(OC.system.B_is_superop) == '.')
-    disp('Warning: Liouvillian control ops with possibly negative control values.')
-end
-
-
-% Check control parameters
-% For now control_par doesn't have separate entries for each timeslot
-if nargin < 4
-    control_par = cell(size(control_type));
-elseif length(control_par) ~= n_controls
-    error('Length of the control_par vector does not match the number of controls.')
-end
-OC.seq.control_par = control_par;
-
 
 % Is tau_par a total time or a vector of delta_t:s?
 len_params = size(tau_par, 1);
