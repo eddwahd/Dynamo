@@ -37,7 +37,7 @@ H_drift = heisenberg(dim, [1 1 1]);
 
 % Control Hamiltonians / Liouvillians
 [H_ctrl, control_type] = control(dim, 'xy', 2);
-%H_ctrl = horzcat(H_ctrl, -0.01 * superop_lindblad(dephase2));
+%H_ctrl = horzcat(H_ctrl, 0.01 * superop_lindblad(dephase2));
 
 % transformed controls?
 control_par = {};
@@ -45,8 +45,7 @@ control_par = {};
 
 
 % Drift Liouvillian (noise / dissipation)
-% FIXME NOTE the minus sign (different convention)
-%L_drift = -0.002 * superop_lindblad(depolarize1) -0.0013 * superop_lindblad(depolarize2);
+%L_drift = 0.002 * superop_lindblad(depolarize1) +0.0013 * superop_lindblad(depolarize2);
 
 initial = eye(prod(dim));
 final = qft(length(dim));

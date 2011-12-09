@@ -8,7 +8,7 @@ function [H] = heisenberg(dim, J)
 % Ville Bergholm 2011
 
 
-  if (isa(J, 'function_handle'))
+  if isa(J, 'function_handle')
     Jfunc = J;
   else
     Jfunc = @(k,s) J(s);

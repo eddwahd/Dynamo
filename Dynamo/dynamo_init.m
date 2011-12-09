@@ -215,7 +215,7 @@ end
 function system_liouville()
 % Set up Liouville space generators.
 
-  OC.system.A = L_drift +1i*comm(H_drift);
+  OC.system.A = -L_drift +1i*comm(H_drift);
   OC.system.B = cell(1, n_controls);
   OC.system.B_is_superop = false(1, n_controls);
 
@@ -227,7 +227,7 @@ function system_liouville()
       if length(H_ctrl{k}) ~= dim
           OC.system.B{k} = 1i*comm(H_ctrl{k}); % Hamiltonian
       else
-          OC.system.B{k} = H_ctrl{k}; % Liouvillian
+          OC.system.B{k} = -H_ctrl{k}; % Liouvillian
           OC.system.B_is_superop(k) = true;
       end
   end

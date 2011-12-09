@@ -65,15 +65,15 @@ else
     q = 5;
     dim = 2 * ones(1, q);
     fprintf('Ising chain with Stark shift, %d qubits, uniform XY control.\n', q)
-    H = heisenberg(dim, 2*[0 0 1]) + sum_op(q, -SZ, 2+(1:q));
-    C = {sum_op(q, 0.5*SX), sum_op(q, 0.5*SY)};
+    H = heisenberg(dim, 2*[0 0 1]) + op_sum(dim, @(k) -SZ*(2+k));
+    C = {op_sum(dim, 0.5*SX), op_sum(dim, 0.5*SY)};
     final = qft(q);
     
   case 19
     q = 5;
     dim = 2 * ones(1, q);
     fprintf('Heisenberg chain with bias, %d qubits, Z control.\n', q)
-    H = heisenberg(dim, 2*[1 1 1]) + sum_op(q, -10*SX);
+    H = heisenberg(dim, 2*[1 1 1]) + op_sum(dim, -10*SX);
     C = control(dim, 'z');
     final = qft(q);
     
@@ -129,19 +129,4 @@ OC.config.BFGS = struct('fminopt', struct('Display', 'off'));
 termination_reason = search_BFGS();
 
 analyze();
-end
-
-
-
-function H = sum_op(n, op, mult)
-% Sum of operator op applied to each of n qubits.
-    if nargin < 3
-        mult = ones(n, 1);
-    end
-    
-    N = 2^n;
-    H = sparse(N, N);
-    for k=1:n
-        H = H + mkron(speye(2^(k-1)), mult(k)*op, speye(2^(n-k)));
-    end
 end
