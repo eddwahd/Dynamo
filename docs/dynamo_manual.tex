@@ -24,7 +24,7 @@
 \DeclareMathOperator{\re}{Re}
 \DeclareMathOperator{\cvec}{vec}
 
-\newcommand{\dd}[2]{\frac{\mathrm{d} #1}{\mathrm{d} #2}}
+\newcommand{\dd}[2]{\frac{\partial #1}{\partial #2}}
 
 \begin{document}
 
@@ -158,16 +158,16 @@ D(A,B)
 := \frac{d^2(A, B)}{|A|^2}
 = 1 +\frac{|B|^2}{|A|^2} -2 f(A, B).
 \ee
-Clearly $f(A, A) = 1$, and we have
+Clearly $f(A, A) = 1$, and
+the triangle inequality $|A-B| \le |A|+|B|$ yields
 \be
-0 \le D(A, B) \le \left(1 + \frac{|B|}{|A|} \right)^2
+\left(1 -\frac{|B|}{|A|} \right)^2 \le D(A, B) \le \left(1 +\frac{|B|}{|A|} \right)^2
 \qquad \text{and} \qquad
 |f(A, B)|
 \le \frac{|B|}{|A|}
 %\le \frac{1}{2} \left(1 +\frac{|B|^2}{|A|^2} \right)
 \ee
-since by triangle inequality $|A-B| \le |A|+|B|$,
-and $f(A, -B) = -f(A, B)$.
+since $f(A, -B) = -f(A, B)$.
 
 
 (X1): Is minimum distance equivalent to maximum fidelity?
@@ -242,7 +242,7 @@ f(X_f, X_n)
 Furthermore, the fidelity is strictly nonnegative since the
 state operators are positive:
 \be
-0 \le f(X_f, X_n) \le \frac{P(\rho_0)}{P(\rho_f)}.
+0 \le f(X_f, X_n) \le \sqrt{\frac{P(\rho_0)}{P(\rho_f)}}.
 \ee
 If either $\rho_f$ or $\rho_0$ is pure,
 $\rho = \ketbra{\psi}{\psi}$,
@@ -403,10 +403,9 @@ If it does, maximize it:
 \be
 |f(X_f, X_n)| \le \frac{|X_0|}{|X_f|}.
 \ee
-Otherwise, directly minimize~$D(X_f, X_n)$
-or equivalently maximize
+Otherwise, directly minimize~$D(X_f, X_n)$:
 \be
-W(X_f,X_n) := 1 - D(X_f, X_n) = 2 f(X_f, X_n) -\frac{|X_n|^2}{|X_f|^2} \le 1.
+D(X_f, X_n) = 1 +\frac{|X_n|^2}{|X_f|^2} -2 f(X_f, X_n).
 \ee
 The fidelity derivative is computed as usual, the norm derivative gives
 \be
@@ -418,8 +417,8 @@ The fidelity derivative is computed as usual, the norm derivative gives
 \ee
 and thus
 \be
-\dd{W(X_f, X_n)}{u(t_j)}
-= \frac{2}{|X_f|^2} \re \tr\left((X_f-X_n)^\dagger \dd{X_n}{u(t_j)}\right).
+\dd{D(X_f, X_n)}{u(t_j)}
+= \frac{2}{|X_f|^2} \re \tr\left((X_n-X_f)^\dagger \dd{X_n}{u(t_j)}\right).
 \ee
 
 

@@ -1,4 +1,4 @@
-function x = control_condition(f)
+function x = control_condition()
 % Finds the fluence corresponding to the least-ill conditioning for a problem instance.
 
 % Ville Bergholm 2011
@@ -36,8 +36,8 @@ function ret = find_cond(seq, f, q)
     % only update the control fields, not taus
     control_update(raw, [true(size(raw)), false(n_timeslots, 1)]);
 
-    [Q, J] = Q_nr(true(size(seq.raw_controls)));
-    ret(j) = conditioning(Q, J);
+    [L, J] = error_NR(true(size(seq.raw_controls)));
+    ret(j) = conditioning(L, J);
   end
 end
 

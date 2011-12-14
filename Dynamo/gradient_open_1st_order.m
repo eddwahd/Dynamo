@@ -1,5 +1,5 @@
 function [grad] = gradient_open_1st_order(control_mask)
-% Gradient of Q_open by first order approximation.
+% Gradient of error_open by first order approximation.
 
 % dP_k/d_u \approx (-B_u * dt_k) * P_k
 % Exact if G_k commutes with B_u.
@@ -41,7 +41,7 @@ for z = 1:length(Ts)
     end
 
     X_n = OC.cache.L{t+1} * OC.cache.U{t+1};
-    temp = OC.system.X_final - X_n;
+    temp = X_n - OC.system.X_final;
     
     if c == tau_c
         temp = -OC.seq.tau_deriv(t) * inprod(temp, OC.cache.L{t+1} * OC.cache.H{t} * OC.cache.U{t+1});

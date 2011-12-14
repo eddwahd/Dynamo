@@ -1,7 +1,7 @@
-function [Q, grad_Q] = Q_abs(control_mask)
-% Projective goal function and gradient.
+function [err, grad] = error_abs(control_mask)
+% Projective error function and its gradient.
 %
-% If no control_mask is given, computes just the goal function.
+% If no control_mask is given, computes just the error function.
 % Otherwise also gives the corresponding gradient.
 
 global OC;
@@ -14,14 +14,14 @@ if nargin == 1
 end
 
 g = g_func();
-%Q = abs(g)^2 / OC.system.norm2^2;
-Q = abs(g) / OC.system.norm2;
+%err = OC.system.max_Q^2 - abs(g)^2 / OC.system.norm2^2;
+err = OC.system.max_Q - abs(g) / OC.system.norm2;
 
 if nargin == 1
     % gradient of |g|^2
-    %grad_Q = 2 * real(conj(g) * grad_g) / OC.system.norm2^2;
+    %grad = 2 * real(conj(g) * grad_g) / -OC.system.norm2^2;
 
     % gradient of |g|
-    grad_Q = real(conj(g)/abs(g) * grad_g) / OC.system.norm2;
+    grad = real(conj(g)/abs(g) * grad_g) / -OC.system.norm2;
 end
 

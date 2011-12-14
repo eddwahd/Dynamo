@@ -1,12 +1,12 @@
-function [Q, J] = Q_nr(control_mask)
-% The Newton-Raphson (vector valued) goal function and its Jacobian.
-% Q is denoted by fraktur L in the docs
+function [L, J] = error_NR(control_mask)
+% The Newton-Raphson (vector valued) error function L and its Jacobian.
+% L is denoted by fraktur L in the docs.
 
 % Ville Bergholm 2011
 
 
 global OC
-% TODO instead of g, cache Q? now there's no benefit in storing an
+% TODO instead of g, cache L? now there's no benefit in storing an
 % intermediate value or is there?
 %if ~OC.cache.g_is_stale 
 %  g = OC.cache.g;
@@ -17,13 +17,13 @@ global OC
 % Try to figure out which k requires least additional computation.
 k = g_setup_recalc();
 cache_refresh();
-Q = logm(OC.cache.L{k} * OC.cache.U{k});
+L = logm(OC.cache.L{k} * OC.cache.U{k});
   
 if nargin == 1
-    J = gradient_nr(control_mask, Q);
+    J = gradient_nr(control_mask, L);
 end
 
-Q = vec(P(Q));
+L = vec(P(L));
 %OC.cache.g_is_stale = false;
 %OC.cache.g = g;
 end
@@ -37,4 +37,3 @@ function A = P(A)
   temp = trace(A) / n;
   A = A - temp * eye(n);
 end
-

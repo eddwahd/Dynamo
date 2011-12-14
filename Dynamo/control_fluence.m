@@ -1,4 +1,4 @@
-function ret = control_fluence(seq)
+function ret = control_fluence(seq, sys)
 % Computes the total fluence of the control fields corresponding to
 % control parameters in seq.
 % The fluence is defined as F^2 = \int_0^T |H_c(t)|^2 dt,    H_c(t) = \sum_r H_r f_r(t).
@@ -17,5 +17,5 @@ ret = 0;
 n_timeslots = size(seq.control, 1);
 for k = 1:n_timeslots
     c = seq.control(k, :); % all controls for this timeslot
-    ret = ret +c * seq.M * c.' * seq.tau(k);
+    ret = ret +c * sys.M * c.' * seq.tau(k);
 end

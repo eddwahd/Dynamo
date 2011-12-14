@@ -15,15 +15,15 @@ x = control_get(OC.opt.control_mask);
 while ~stop
     OC.opt.N_eval = OC.opt.N_eval + 1;
 
-    [v, grad] = OC.config.Q_func(OC.opt.control_mask);
+    [v, grad] = OC.config.error_func(OC.opt.control_mask);
     
-    x = x + OC.config.FirstOrder.step_size .* grad(:);
+    x = x - OC.config.FirstOrder.step_size .* grad(:);
     OC.opt.last_grad_norm = sqrt(sum(sum(grad .* grad)));
     control_update(x, OC.opt.control_mask);
 
-    next_v = OC.config.Q_func();
+    next_v = OC.config.error_func();
     
-    actual_improvement = next_v - v;
+    actual_improvement = v - next_v;
     exptected_improvement = OC.opt.last_grad_norm.^2 * OC.config.FirstOrder.step_size / OC.system.norm2;
     
     if actual_improvement < (4/12) * exptected_improvement

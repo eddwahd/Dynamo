@@ -5,10 +5,9 @@ function dynamo_init(task, initial, final, H_drift, H_ctrl, L_drift)
 
 % Ville Bergholm 2011
 
-% TODO separate init of orthogonal blocks: task, system, initial/final?
 
 % Dynamo version
-version = '1.3 alpha9';
+version = '1.3 alpha10';
 
 % All definitions are in a global variable called OC
 global OC; % and now we can access it too
@@ -44,11 +43,9 @@ OC.config.task = task;
 
 OC.config.expmFunc = @expm;
 
-n_controls = length(H_ctrl);
-
 % TODO temporary fix: sparse to full
 H_drift = full(H_drift);
-for k=1:n_controls
+for k = 1:length(H_ctrl)
     H_ctrl{k} = full(H_ctrl{k});
 end
 
@@ -69,10 +66,10 @@ switch system
       case 'state'
         out = strcat(out, ' mixed state transfer');
         % TODO more efficient Hilbert space implementation?
-        system_vec();
-        L_drift = 0;
-        system_liouville();
-        OC.config.Q_func = @Q_real;
+        OC.system = system_vec(OC.system, initial, final);
+        OC.system = system_liouville(OC.system, H_drift, 0, H_ctrl);
+        % g is always real, positive in this case so error_abs would work just as well
+        OC.config.error_func = @error_real;
         
       case {'ket', 'gate'}
         if strcmp(task, 'ket')
@@ -89,19 +86,23 @@ switch system
 
         OC.system.X_initial = initial;
         OC.system.X_final   = final;
-        system_hilbert();
+        OC.system = system_hilbert(OC.system, H_drift, H_ctrl);
         
         if strcmp(phase, 'phase')
             out = strcat(out, ' (with global phase (NOTE: unphysical!))');
-            OC.config.Q_func = @Q_real;
+            OC.config.error_func = @error_real;
         else
             out = strcat(out, ' (ignoring global phase)');
-            OC.config.Q_func = @Q_abs;
+            OC.config.error_func = @error_abs;
         end
         
       otherwise
         error('Unknown task.')
     end
+
+    % global maximum of the quality function (fidelity or Q in the docs FIXME)
+    OC.system.max_Q = sqrt(norm2(OC.system.X_initial) / norm2(OC.system.X_final));
+
     out = strcat(out, ' in a closed system.\n');
 
     % L: X_final' propagated backward 
@@ -117,7 +118,7 @@ switch system
     switch task
       case 'state'
         out = strcat(out, ' quantum state transfer');
-        system_vec();
+        OC.system = system_vec(OC.system, initial, final);
 
       case 'gate'
         out = strcat(out, ' quantum map');
@@ -133,16 +134,16 @@ switch system
     end
     out = strcat(out, ' in an open system under Markovian noise.\n');
     
-    system_liouville();
+    OC.system = system_liouville(OC.system, H_drift, L_drift, H_ctrl);
 
     % The generator isn't usually normal, so we cannot use the exact gradient method
-    OC.config.Q_func = @Q_open;
+    OC.config.error_func = @error_open;
     OC.opt.max_violation = 0;
 
     % L: reverse propagator
     OC.cache.L_end = eye(length(OC.system.X_final));
     
-    %OC.config.Q_func = @Q_real; % TEST, requires also OC.cache.L{end} = X_final'
+    %OC.config.error_func = @error_real; % TEST, requires also OC.cache.L{end} = X_final'
     %OC.config.gradientFunc = @gradient_first_order_aprox;
     OC.config.calcPfromHfunc = @calcPfromH_expm;
 
@@ -161,29 +162,17 @@ end
 fprintf(out);
 fprintf('Optimization system dimension: %d\n', length(OC.system.X_final));
 
-% Calculate the squared norm |X_final|^2 to scale subsequent fidelities (the real() is just taking care of rounding errors).
+% Calculate the squared norm |X_final|^2 to scale subsequent fidelities.
 % We use the Hilbert-Schmidt inner product (and the induced Frobenius norm) throughout the code.
-OC.system.norm2 = real(inprod(OC.system.X_final, OC.system.X_final));
-
-
-function inprod_B()
-% Computes the inner product matrix of the control operators.
-
-  B = OC.system.B;
-  n_controls = length(B);
-  M = zeros(n_controls);
-  for j = 1:n_controls
-    for k = 1:n_controls
-      M(j,k) = inprod(B{j}, B{k});
-    end
-  end
-  % FIXME what about dissipative controls? superoperators?
-  OC.seq.M = M;
+OC.system.norm2 = norm2(OC.system.X_final);
 end
 
 
-function system_vec()
-% Set up the vec representation for initial and final states in a Liouville space.
+
+
+function sys = system_vec(sys, initial, final)
+% Set up the vec representation for the initial and final states of
+% a system in Liouville space.
 
   % state vectors are converted to state operators
   if size(initial, 2) == 1
@@ -193,46 +182,62 @@ function system_vec()
     final = final * final';
   end
 
-  OC.system.X_initial = vec(initial);
-  OC.system.X_final   = vec(final);
+  sys.X_initial = vec(initial);
+  sys.X_final   = vec(final);
 end
 
 
-function system_hilbert()
-% Set up Hilbert space generators.
 
-  % (NOTE: generators are not pure Hamiltonians, extra 1i!)
-  OC.system.A = 1i * H_drift;
-  OC.system.B = cell(1, n_controls);
-  OC.system.B_is_superop = false(1, n_controls);
+function sys = system_hilbert(sys, H_drift, H_ctrl)
+% Set up Hilbert space generators for a system.
+
+  % (NOTE: generators are not pure Hamiltonians, there's an extra 1i!)
+  sys.A = 1i * H_drift;
+
+  n_controls = length(H_ctrl);
+  sys.B = cell(1, n_controls);
+  sys.B_is_superop = false(1, n_controls);
   for k=1:n_controls
-      OC.system.B{k} = 1i * H_ctrl{k};
+      sys.B{k} = 1i * H_ctrl{k};
   end
-  inprod_B();
+  sys.M = inprod_B(sys.B);
 end
 
 
-function system_liouville()
-% Set up Liouville space generators.
+function M = inprod_B(B)
+% Computes the inner product matrix of the control operators.
 
-  OC.system.A = -L_drift +1i*comm(H_drift);
-  OC.system.B = cell(1, n_controls);
-  OC.system.B_is_superop = false(1, n_controls);
+  n_controls = length(B);
+  M = zeros(n_controls);
+  for j = 1:n_controls
+    for k = 1:n_controls
+      M(j,k) = inprod(B{j}, B{k});
+    end
+  end
+  % FIXME what about dissipative controls? superoperators?
+end
+
+
+function sys = system_liouville(sys, H_drift, L_drift, H_ctrl)
+% Set up Liouville space generators for a system.
+
+  sys.A = -L_drift +1i*comm(H_drift);
+
+  n_controls = length(H_ctrl);
+  sys.B = cell(1, n_controls);
+  sys.B_is_superop = false(1, n_controls);
 
   % Liouville space dimension
-  dim = length(OC.system.X_final);
+  dim = length(sys.X_final);
 
   for k=1:n_controls
       % check for Liouvillian controls
       if length(H_ctrl{k}) ~= dim
-          OC.system.B{k} = 1i*comm(H_ctrl{k}); % Hamiltonian
+          sys.B{k} = 1i*comm(H_ctrl{k}); % Hamiltonian
       else
-          OC.system.B{k} = -H_ctrl{k}; % Liouvillian
-          OC.system.B_is_superop(k) = true;
+          sys.B{k} = -H_ctrl{k}; % Liouvillian
+          sys.B_is_superop(k) = true;
       end
   end
-end
-
-
 end
 

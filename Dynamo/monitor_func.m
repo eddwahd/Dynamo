@@ -13,6 +13,7 @@ ct = cputime() - OC.opt.cpu_start;
 % TODO some of these are already present in optimValues...
 OC.opt.N_iter = OC.opt.N_iter + 1;
 
+
 if OC.opt.N_eval >= OC.opt.term_cond.max_loop_count
     OC.opt.term_reason = 'Loop count limit reached';
     stop = true;
@@ -33,15 +34,16 @@ if OC.opt.last_grad_norm <= OC.opt.term_cond.min_gradient_norm
     stop = true;
 end
 
-if x >= OC.opt.term_cond.goal
+% have we reached our goal?
+if optimValues.fval <= OC.opt.term_cond.error_goal
     OC.opt.term_reason = 'Goal achieved';
     stop = true;
 end
 
 
 % stats collector part
-OC.stats.Q_func(end+1) = -optimValues.fval; % maximize vs. minimize...
+OC.stats.error(end+1) = optimValues.fval;
 OC.stats.wall_time(end+1) = wt;
 OC.stats.cpu_time(end+1)  = ct;
-OC.stats.fluence(end+1) = control_fluence(OC.seq);
+OC.stats.fluence(end+1) = control_fluence(OC.seq, OC.system);
 end

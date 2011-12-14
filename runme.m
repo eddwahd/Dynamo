@@ -14,7 +14,8 @@ randseed(seed); % Optional. Allows the same pseudo-random initial controls to be
 
 
 % dimension vector for the quantum system
-dim = [2 2 2];
+dim = [2 2];
+D = prod(dim);
 
 
 SX = [0 1; 1 0];
@@ -50,10 +51,12 @@ control_par = {};
 initial = eye(prod(dim));
 final = qft(length(dim));
 %final = eye(prod(dim));
-
 % for pure state transfer
 %initial = [1; 0; 0; 0];
 %final = [1; 0; 0; 1]/sqrt(2);
+% mixed states
+%initial = rand_positive(D);
+%final = rand_positive(D);
 
 dynamo_init('S gate', initial, final, H_drift, H_ctrl)
 %dynamo_init('SB gate', initial, final, H_drift, H_ctrl, L_drift)
@@ -78,5 +81,6 @@ global OC; % and now we can access it too
 
 OC.config.BFGS = struct('fminopt', struct('Display', 'off'));
 termination_reason = search_BFGS();
+%search_NR();
 
 analyze();
