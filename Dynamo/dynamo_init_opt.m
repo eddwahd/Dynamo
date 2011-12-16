@@ -1,6 +1,7 @@
 function dynamo_init_opt(control_mask)
 % Initialize the optimization module.
-    
+% FIXME interplay with the search_* functions and their options, monitor_func.
+
 global OC;
 
 OC.opt.control_mask = control_mask;

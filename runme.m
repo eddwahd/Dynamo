@@ -10,20 +10,21 @@ end
 randseed(seed); % Optional. Allows the same pseudo-random initial controls to be generated on every run (helpful for debugging purposes, for example)
 
 
-%% Define the physics of the problem
-
-
-% dimension vector for the quantum system
-dim = [2 2];
-D = prod(dim);
-
+%% Pauli matrices etc.
 
 SX = [0 1; 1 0];
 SY = [0 -1i; 1i 0];
 SZ = [1 0; 0 -1];
 I = eye(2);
-
 SP = (SX +1i*SY)/2;
+
+
+%% Define the physics of the problem
+
+% dimension vector for the quantum system
+dim = [2 2 2]; % two qubits
+D = prod(dim);
+
 
 relax1 = {kron(SP, I)};
 relax2 = {kron(I, SP)};
@@ -68,7 +69,7 @@ dynamo_init_control_type(control_type, control_par);
 
 %% Optimization options
 
-control_mask = control_rand(10, 20, true);
+control_mask = control_rand(10, 20, true, true);
 dynamo_init_opt(control_mask);
 
 
@@ -79,8 +80,7 @@ fprintf('\nOptimizing algorithm: GRAPE (BFGS 2nd order update scheme, updating a
 % All definitions are in a global variable called OC
 global OC; % and now we can access it too
 
-OC.config.BFGS = struct('fminopt', struct('Display', 'off'));
-termination_reason = search_BFGS();
+termination_reason = search_BFGS(optimset('Display', 'final'));
 %search_NR();
 
 analyze();

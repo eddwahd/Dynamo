@@ -5,7 +5,7 @@ function plot_stats(stats, handle)
 
 pos = get(handle, 'position');
 
-h = (pos(4)-pos(2))/2
+h = (pos(4)-pos(2))/2;
 dy = pos(4)/2; 
 
 f = @semilogy; % @plot;

@@ -1,10 +1,8 @@
-function term_reason = search_BFGS()
+function term_reason = search_BFGS(user_options)
 global OC;
 
 
-%OC.opt.term_reason = 'BFGS: Minimal gradient norm reached'; % If BFGS cannot find the goal, this is because the gradients are pointing nowhere useful
-
-
+% default options
 problem.options = optimset(...
     'TolX',         1e-8,...
     'TolFun',       1e-8,...
@@ -15,12 +13,14 @@ problem.options = optimset(...
     'OutputFcn',    @monitor_func,...
     'Display',      'off');
 
-if isfield(OC.config,'BFGS') && isfield(OC.config.BFGS,'fminopt')
-    fn = fieldnames(OC.config.BFGS.fminopt);
-    for k=1:length(fn)
-        problem.options = optimset(problem.options, fn{k}, OC.config.BFGS.fminopt.(fn{k}));
-   end
-end    
+% additional user-defined options
+if nargin == 1
+    problem.options = optimset(problem.options, user_options);
+end
+
+% save a copy
+OC.opt.BFGS_options = problem.options;
+
 
 problem.objective = @goal_and_gradient_function_wrapper;
 problem.x0 = control_get(OC.opt.control_mask);
