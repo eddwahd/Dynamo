@@ -1,4 +1,4 @@
-function test_suite(p)
+function control_mask = test_suite(p)
 % Implementation of the test cases from the paper
 % S. Machnes et al., arXiv:1011.4874
 % Ville Bergholm 2011
@@ -108,7 +108,7 @@ dynamo_init('S gate', initial, final, H, C)
 
 
 
-%% Optimization options
+%% Controls
 
 timeslots = [30, 40, 128, 64, 120, 140, 128, 128, 64, 300, 300, 64,...
              128, 128, 40, 64, 1000, 1000, 300, 64, 128, 100, 50];
@@ -118,15 +118,4 @@ T = [2, 2, 3, 4, 6, 7, 10, 12, 20, 15, 20, 25,...
 
 % Set up random initial controls.
 control_mask = control_rand(T(p), timeslots(p), false);
-dynamo_init_opt(control_mask);
-
-
-%% Now do the actual search
-
-fprintf('\nOptimizing algorithm: GRAPE (BFGS 2nd order update scheme, updating all time slices concurrently).\n\n    Please wait, this may take a while... \n\n'); drawnow;
-
-OC.config.BFGS = struct('fminopt', struct('Display', 'off'));
-termination_reason = search_BFGS();
-
-analyze();
 end

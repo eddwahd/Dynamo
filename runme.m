@@ -22,7 +22,7 @@ SP = (SX +1i*SY)/2;
 %% Define the physics of the problem
 
 % dimension vector for the quantum system
-dim = [2 2 2]; % two qubits
+dim = [2 2 2 2 2]; % n qubits
 D = prod(dim);
 
 
@@ -35,11 +35,13 @@ depolarize2 = {kron(I, SX), kron(I, SY), kron(I, SZ)};
 
 
 % Drift Hamiltonian
-H_drift = heisenberg(dim, [1 1 1]);
+H_drift = heisenberg(dim, [0 0 4]) -op_sum(dim, @(k) (k+2)*SZ);
 
 % Control Hamiltonians / Liouvillians
-[H_ctrl, control_type] = control(dim, 'xy', 2);
+%[H_ctrl, control_type] = control(dim, 'xy', 2);
 %H_ctrl = horzcat(H_ctrl, 0.01 * superop_lindblad(dephase2));
+H_ctrl = {op_sum(dim, @(k) SX), op_sum(dim, @(k) SY)};
+control_type = '..';
 
 % transformed controls?
 control_par = {};
@@ -49,7 +51,7 @@ control_par = {};
 % Drift Liouvillian (noise / dissipation)
 %L_drift = 0.002 * superop_lindblad(depolarize1) +0.0013 * superop_lindblad(depolarize2);
 
-initial = eye(prod(dim));
+initial = eye(D);
 final = qft(length(dim));
 %final = eye(prod(dim));
 % for pure state transfer
@@ -67,19 +69,17 @@ dynamo_init_control_type(control_type, control_par);
 
 
 
-%% Optimization options
+%% Initial controls
 
-control_mask = control_rand(10, 20, true, true);
-dynamo_init_opt(control_mask);
+%control_mask = control_rand(10, 20, true, true);
+control_mask = control_rand(125, 100, false);
 
 
 %% Now do the actual search
 
+dynamo_init_opt(control_mask);
+
 fprintf('\nOptimizing algorithm: GRAPE (BFGS 2nd order update scheme, updating all time slices concurrently).\n\n    Please wait, this may take a while... \n\n'); drawnow;
-
-% All definitions are in a global variable called OC
-global OC; % and now we can access it too
-
 termination_reason = search_BFGS(optimset('Display', 'final'));
 %search_NR();
 

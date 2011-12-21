@@ -8,7 +8,7 @@ pos = get(handle, 'position');
 h = (pos(4)-pos(2))/2;
 dy = pos(4)/2; 
 
-f = @semilogy; % @plot;
+f = @loglog; % @semilogy % @plot;
 
 %iter = 1:length(stats.error);
 %ax = plotyy(iter, abs(stats.error), iter, stats.wall_time, f);
@@ -18,6 +18,8 @@ subplot('Position', [pos(1) 2*pos(2)+h pos(3) h])
 f(stats.wall_time, abs(stats.error));
 xlabel('Wall time (s)')
 ylabel('Normalized error')
+temp = axis();
+temp(4) = 1; axis(temp);
 grid on
 
 subplot('Position', [pos(1) pos(2) pos(3) h]) 

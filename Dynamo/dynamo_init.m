@@ -54,7 +54,7 @@ input_dim = [size(initial, 2), size(final, 2)]; % check the validity of the inpu
 [system, rem] = strtok(task);
 [task, rem] = strtok(rem);
 [phase, rem] = strtok(rem);
-out = '\nOptimize a control sequence to obtain the given';
+out = 'Target operation:';
 switch system
   case {'s'}
     %% Closed system S
@@ -160,7 +160,7 @@ switch system
 end
 
 fprintf(out);
-fprintf('Optimization system dimension: %d\n', length(OC.system.X_final));
+fprintf('System dimension: %d\n\n', length(OC.system.X_final));
 
 % Calculate the squared norm |X_final|^2 to scale subsequent fidelities.
 % We use the Hilbert-Schmidt inner product (and the induced Frobenius norm) throughout the code.
@@ -239,5 +239,7 @@ function sys = system_liouville(sys, H_drift, L_drift, H_ctrl)
           sys.B_is_superop(k) = true;
       end
   end
+  
+  sys.M = eye(n_controls); % FIXME temporary fix, meaningless
 end
 

@@ -24,6 +24,6 @@ X_n = OC.cache.L{k} * OC.cache.U{k};
 f = real(inprod(OC.system.X_final, X_n));
 
 % |X_n|^2
-B_norm2 = norm2(X_n, X_n);
+B_norm2 = norm2(X_n);
 
 err = 1 + (B_norm2 -2*f) / OC.system.norm2;

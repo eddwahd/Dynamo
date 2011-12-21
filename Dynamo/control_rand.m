@@ -20,14 +20,15 @@ else
     initial_controls = scale * randn(normal_controls);
 end
 
+fprintf('Tau values ');
 if optimize_tau
-    disp('Tau values optimized.')
+    fprintf('optimized.\n');
     tau_par = [0.25 * T, 0.75 * T]; % min, delta
     %tau_c = 2*pi*rand(t_controls); % random
     tau_c = pi/2 * ones(t_controls); % halfway
     mask = [true(normal_controls), true(t_controls)];
 else
-    disp('Fixed tau values.')
+    fprintf('fixed.\n')
     tau_par = [T, 0];
     tau_c = zeros(t_controls);
     mask = [true(normal_controls), false(t_controls)];

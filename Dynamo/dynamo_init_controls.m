@@ -18,7 +18,7 @@ if n_controls ~= length(OC.system.B)
     error('Number of controls given does not match the number of control Hamiltonians.')
 end
 
-fprintf('\nTimeslots: %d\nControls: %d + tau\n', n_timeslots, n_controls);
+fprintf('Timeslots: %d\nControls per slot: %d + tau\n\n', n_timeslots, n_controls);
 
 
 %% Check the validity of the parameters.
