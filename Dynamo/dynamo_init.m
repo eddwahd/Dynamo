@@ -36,14 +36,19 @@ task = lower(task);
 
 %% Some basic data provenance
 
-OC.config.version = version;
+config.version = version;
 % Local time. TODO UTC or local time with timezone specifier would be better, but apparently MATLAB doesn't do that.
-OC.config.date = datestr(now(), 31);
-OC.config.task = task;
+config.date = datestr(now(), 31);
+config.task = task;
+config.expmFunc = @expm;
 
-OC.config.expmFunc = @expm;
 
-% TODO temporary fix: sparse to full
+%% Description of the physical system
+
+system = struct();
+
+% TODO FIXME temporary fix: sparse to full
+L_drift = full(L_drift);
 H_drift = full(H_drift);
 for k = 1:length(H_ctrl)
     H_ctrl{k} = full(H_ctrl{k});
@@ -51,28 +56,28 @@ end
 
 input_dim = [size(initial, 2), size(final, 2)]; % check the validity of the inputs
 
-[system, rem] = strtok(task);
-[task, rem] = strtok(rem);
-[phase, rem] = strtok(rem);
+[system_str, rem] = strtok(task);
+[task_str, rem] = strtok(rem);
+[phase_str, rem] = strtok(rem);
 out = 'Target operation:';
-switch system
+switch system_str
   case {'s'}
     %% Closed system S
     if nargin ~= 5
         error('Too many parameters.')
     end
     
-    switch task
+    switch task_str
       case 'state'
         out = strcat(out, ' mixed state transfer');
         % TODO more efficient Hilbert space implementation?
-        OC.system = system_vec(OC.system, initial, final);
-        OC.system = system_liouville(OC.system, H_drift, 0, H_ctrl);
+        system = system_vec(system, initial, final);
+        system = system_liouville(system, H_drift, 0, H_ctrl);
         % g is always real, positive in this case so error_abs would work just as well
-        OC.config.error_func = @error_real;
+        config.error_func = @error_real;
         
       case {'ket', 'gate'}
-        if strcmp(task, 'ket')
+        if strcmp(task_str, 'ket')
             out = strcat(out, ' pure state transfer');
             if any(input_dim ~= 1)
                 error('Initial and final states should be normalized kets.')
@@ -84,16 +89,16 @@ switch system
             end
         end
 
-        OC.system.X_initial = initial;
-        OC.system.X_final   = final;
-        OC.system = system_hilbert(OC.system, H_drift, H_ctrl);
+        system.X_initial = initial;
+        system.X_final   = final;
+        system = system_hilbert(system, H_drift, H_ctrl);
         
-        if strcmp(phase, 'phase')
+        if strcmp(phase_str, 'phase')
             out = strcat(out, ' (with global phase (NOTE: unphysical!))');
-            OC.config.error_func = @error_real;
+            config.error_func = @error_real;
         else
             out = strcat(out, ' (ignoring global phase)');
-            OC.config.error_func = @error_abs;
+            config.error_func = @error_abs;
         end
         
       otherwise
@@ -101,24 +106,24 @@ switch system
     end
 
     % global maximum of the quality function (fidelity or Q in the docs FIXME)
-    OC.system.max_Q = sqrt(norm2(OC.system.X_initial) / norm2(OC.system.X_final));
+    system.max_Q = sqrt(norm2(system.X_initial) / norm2(system.X_final));
 
     out = strcat(out, ' in a closed system.\n');
 
     % L: X_final' propagated backward 
-    OC.cache.L_end = OC.system.X_final';
+    OC.cache.L_end = system.X_final';
 
     % the generator is always Hermitian and thus normal => use exact gradient
-    OC.config.gradientFunc = @gradient_exact;
-    OC.config.calcPfromHfunc = @calcPfromH_exact_gradient; % When computing exact gradient, we get exponentiation for free due to the eigendecomposition (see paper for details)    
+    config.gradientFunc = @gradient_exact;
+    config.calcPfromHfunc = @calcPfromH_exact_gradient; % When computing exact gradient, we get exponentiation for free due to the eigendecomposition (see paper for details)    
 
     
   case {'sb'}
     %% Open system S with bath B
-    switch task
+    switch task_str
       case 'state'
         out = strcat(out, ' quantum state transfer');
-        OC.system = system_vec(OC.system, initial, final);
+        system = system_vec(system, initial, final);
 
       case 'gate'
         out = strcat(out, ' quantum map');
@@ -126,26 +131,26 @@ switch system
             error('Initial and final states should be operators.')
         end
         
-        OC.system.X_initial = lrmul(initial, initial'); % == kron(conj(initial), initial);
-        OC.system.X_final   = lrmul(final, final'); % == kron(conj(final), final);
+        system.X_initial = lrmul(initial, initial'); % == kron(conj(initial), initial);
+        system.X_final   = lrmul(final, final'); % == kron(conj(final), final);
         
       otherwise
         error('Unknown task.')
     end
     out = strcat(out, ' in an open system under Markovian noise.\n');
     
-    OC.system = system_liouville(OC.system, H_drift, L_drift, H_ctrl);
+    system = system_liouville(system, H_drift, L_drift, H_ctrl);
 
     % The generator isn't usually normal, so we cannot use the exact gradient method
-    OC.config.error_func = @error_open;
+    config.error_func = @error_open;
     OC.opt.max_violation = 0;
 
     % L: reverse propagator
-    OC.cache.L_end = eye(length(OC.system.X_final));
+    OC.cache.L_end = eye(length(system.X_final));
     
-    %OC.config.error_func = @error_real; % TEST, requires also OC.cache.L{end} = X_final'
-    %OC.config.gradientFunc = @gradient_first_order_aprox;
-    OC.config.calcPfromHfunc = @calcPfromH_expm;
+    %config.error_func = @error_real; % TEST, requires also OC.cache.L{end} = X_final'
+    %config.gradientFunc = @gradient_first_order_aprox;
+    config.calcPfromHfunc = @calcPfromH_expm;
 
   case {'se'}
     %% Closed system S + environment E
@@ -160,11 +165,16 @@ switch system
 end
 
 fprintf(out);
-fprintf('System dimension: %d\n\n', length(OC.system.X_final));
+fprintf('System dimension: %d\n\n', length(system.X_final));
 
 % Calculate the squared norm |X_final|^2 to scale subsequent fidelities.
 % We use the Hilbert-Schmidt inner product (and the induced Frobenius norm) throughout the code.
-OC.system.norm2 = norm2(OC.system.X_final);
+system.norm2 = norm2(system.X_final);
+
+
+% store the prepared fields into the global OC struct
+OC.config = config;
+OC.system = system;
 end
 
 
