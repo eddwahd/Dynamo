@@ -14,8 +14,8 @@ if nargin == 1
 end
 
 g = g_func();
-%err = OC.system.max_Q^2 - abs(g)^2 / OC.system.norm2^2;
-err = OC.system.max_Q - abs(g) / OC.system.norm2;
+%err = OC.system.f_max^2 - abs(g)^2 / OC.system.norm2^2;
+err = OC.system.f_max - abs(g) / OC.system.norm2;
 
 if nargin == 1
     % gradient of |g|^2

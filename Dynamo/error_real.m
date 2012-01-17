@@ -11,4 +11,4 @@ if nargin == 1
     grad = real(grad_g) / -OC.system.norm2;
 end
 
-err = OC.system.max_Q - real(g_func()) / OC.system.norm2;
+err = OC.system.f_max - real(g_func()) / OC.system.norm2;

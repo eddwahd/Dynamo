@@ -105,8 +105,8 @@ switch system_str
         error('Unknown task.')
     end
 
-    % global maximum of the quality function (fidelity or Q in the docs FIXME)
-    system.max_Q = sqrt(norm2(system.X_initial) / norm2(system.X_final));
+    % global maximum of the quality function f_max
+    system.f_max = sqrt(norm2(system.X_initial) / norm2(system.X_final));
 
     out = strcat(out, ' in a closed system.\n');
 
