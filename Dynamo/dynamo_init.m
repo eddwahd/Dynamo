@@ -58,7 +58,7 @@ input_dim = [size(initial, 2), size(final, 2)]; % check the validity of the inpu
 
 [system_str, rem] = strtok(task);
 [task_str, rem] = strtok(rem);
-[phase_str, rem] = strtok(rem);
+[extra_str, rem] = strtok(rem);
 out = 'Target operation:';
 switch system_str
   case {'s'}
@@ -93,7 +93,7 @@ switch system_str
         system.X_final   = final;
         system = system_hilbert(system, H_drift, H_ctrl);
         
-        if strcmp(phase_str, 'phase')
+        if strcmp(extra_str, 'phase')
             out = strcat(out, ' (with global phase (NOTE: unphysical!))');
             config.error_func = @error_real;
         else
@@ -142,15 +142,20 @@ switch system_str
     system = system_liouville(system, H_drift, L_drift, H_ctrl);
 
     % The generator isn't usually normal, so we cannot use the exact gradient method
-    config.error_func = @error_open;
-    OC.opt.max_violation = 0;
-
-    % L: reverse propagator
-    OC.cache.L_end = eye(length(system.X_final));
-    
-    %config.error_func = @error_real; % TEST, requires also OC.cache.L{end} = X_final'
-    %config.gradientFunc = @gradient_first_order_aprox;
     config.calcPfromHfunc = @calcPfromH_expm;
+    OC.opt.max_violation = 0; % track the worst violation
+    
+    if strcmp(extra_str, 'overlap')
+      % TEST, simple overlap goal function
+      config.error_func = @error_real;
+      config.gradientFunc = @gradient_first_order_aprox;
+      OC.cache.L_end = system.X_final'; % L: back-propagated final state
+      system.f_max = 1;
+    else
+      config.error_func = @error_open;    
+      OC.cache.L_end = eye(length(system.X_final)); % L: full reverse propagator
+    end
+
 
   case {'se'}
     %% Closed system S + environment E

@@ -238,7 +238,8 @@ $E_\text{abs}$ & 1\\
 & $V_i \to V_f$ & H & $V$ & $N$ & $E_\text{abs}$ & 1\\
 \hline
 Open system SB
-& $\rho_i \to \rho_f$ & L & $\cvec(\rho)$ & $P(\rho)$ & $E_\text{open}$\\
+& $\rho_i \to \rho_f$ & L & $\cvec(\rho)$ & $P(\rho)$ &
+$E_\text{open}, E_\text{real}$\\
 & $F_i \to F_f$ & L & $F$ &  & $E_\text{open}$\\
 \end{tabular}
 \caption{Summary of the optimization tasks.}
@@ -322,8 +323,16 @@ we have $|\rho|^2 = \braket{\psi}{\psi}^2 = 1$, and
 the diagram simplifies by splitting up.
 
 
-In some cases we are only interested in maximizing the overlap of the state with....
-
+In some cases we are only interested in maximizing the projection of
+the state on a target pure state~$\ket{\psi_f}$. In this case the natural error
+function is
+\be
+\bra{\psi_f} \rho_n \ket{\psi_f}
+= \tr\left(\ketbra{\psi_f}{\psi_f} \rho_n \right)
+= (\re) \tr\left(X_f^\dagger X_n\right),
+\ee
+which is just equal to the fidelity. In the closed system case there's
+apparently no difference.
 
 
 
@@ -466,6 +475,17 @@ Usually this is not the case, (X1) is not satisfied and fidelity does not unique
 %\ee
 %Otherwise,
 Hence we directly minimize~$D(X_f, X_n)$.
+
+
+If we are only interested in maximizing the projection of
+the state on a target pure state~$\ket{\psi_f}$, the natural error
+function is again the fidelity:
+\be
+\bra{\psi_f} \rho_n \ket{\psi_f}
+= \tr\left(\ketbra{\psi_f}{\psi_f} \rho_n \right)
+= (\re) \tr\left(X_f^\dagger X_n\right),
+\ee
+
 
 
 
