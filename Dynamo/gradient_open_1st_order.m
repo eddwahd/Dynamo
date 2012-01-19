@@ -31,13 +31,7 @@ for z = 1:length(Ts)
 
     temp = abs(OC.seq.tau(t)) * norm(OC.cache.H{t});
     if temp > 1
-        if temp > OC.opt.max_violation
-            fprintf('warning: gradient approximation not valid at t = %d, c = %d: temp = %f.\n', t, c, temp)
-            OC.opt.max_violation = temp;
-        end
-        if temp > 1e2
-            error('damn it')
-        end
+        gradient_warn(t, c, temp);
     end
 
     X_n = OC.cache.L{t+1} * OC.cache.U{t+1};

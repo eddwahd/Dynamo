@@ -27,11 +27,7 @@ for z = 1:length(Ts)
     
     temp = abs(OC.seq.tau(t)) * norm(OC.cache.H{t});
     if temp > 1
-        fprintf('warning: gradient approximation not valid at t = %d, c = %d: temp = %f.\n', t, c, temp)
-    
-        if temp > 1e2
-            error('damn it')
-        end
+        gradient_warn(t, c, temp);
     end
 
     if c == tau_c
