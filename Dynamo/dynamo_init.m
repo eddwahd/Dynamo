@@ -137,8 +137,6 @@ switch system_str
       otherwise
         error('Unknown task.')
     end
-    out = strcat(out, ' in an open system under Markovian noise.\n');
-    
     system = system_liouville(system, H_drift, L_drift, H_ctrl);
 
     % The generator isn't usually normal, so we cannot use the exact gradient method
@@ -147,6 +145,7 @@ switch system_str
     
     if strcmp(extra_str, 'overlap')
       % TEST, simple overlap goal function
+      out = strcat(out, ' (overlap)');
       config.error_func = @error_real;
       config.gradientFunc = @gradient_first_order_aprox;
       OC.cache.L_end = system.X_final'; % L: back-propagated final state
@@ -155,6 +154,8 @@ switch system_str
       config.error_func = @error_open;    
       OC.cache.L_end = eye(length(system.X_final)); % L: full reverse propagator
     end
+
+    out = strcat(out, ' in an open system under Markovian noise.\n');
 
 
   case {'se'}

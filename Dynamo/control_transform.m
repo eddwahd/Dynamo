@@ -14,9 +14,9 @@ t_raw = raw_control(:, end);
 
 % Returned tau values should always be positive, and not too large
 % if we're using the 1st order gradient approximation.
-% Stretchy bins with min and max duration:  t_raw = 0 <=> max duration
-tau = OC.seq.tau_par(:,1) +0.5 * OC.seq.tau_par(:,2) .* (1+cos(t_raw));
-tau_deriv = -0.5 * OC.seq.tau_par(:,2) .* sin(t_raw);
+% Stretchy bins with min and max duration:  t_raw = 0 <=> min duration
+tau = OC.seq.tau_par(:,1) +0.5 * OC.seq.tau_par(:,2) .* (1-cos(t_raw));
+tau_deriv = 0.5 * OC.seq.tau_par(:,2) .* sin(t_raw);
 
 
 temp = size(raw_control) - [0, 1];
@@ -35,10 +35,10 @@ for k=1:n_controls
         control(:, k) = raw_control(:, k).^2;
         control_deriv(:, k) = 2 * raw_control(:, k);
         
-      case 'm'  % minimum and delta, u_k = min + delta * 0.5 * (1 + cos(r_k))
+      case 'm'  % minimum and delta, u_k = min + delta * 0.5 * (1 - cos(r_k))
         par = OC.seq.control_par{k};
-        control(:, k) = par(1) +par(2) * 0.5 * (1 + cos(raw_control(:, k)));
-        control_deriv(:, k) = -par(2) * 0.5 * sin(raw_control(:, k));
+        control(:, k) = par(1) +par(2) * 0.5 * (1 - cos(raw_control(:, k)));
+        control_deriv(:, k) = par(2) * 0.5 * sin(raw_control(:, k));
       
       otherwise
         error('Unknown control type.')

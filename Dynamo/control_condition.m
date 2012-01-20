@@ -75,7 +75,7 @@ function a = rand_controls_with_fluence(seq, f)
         case 'p'  % strictly nonnegative, u_k = r_k^2
           a(:, k) = sqrt(abs(a(:, k)));
         
-        case 'm'  % minimum and delta, u_k = min + delta * 0.5 * (1 + cos(r_k))
+        case 'm'  % minimum and delta, u_k = min + delta * 0.5 * (1 - cos(r_k))
           error('Not yet implemented.')
       
         otherwise

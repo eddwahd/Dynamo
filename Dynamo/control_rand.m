@@ -1,11 +1,7 @@
-function mask = control_rand(T, timeslots, optimize_tau, const)
+function mask = control_rand(T, timeslots, optimize_tau, const_value)
 % Generates a reasonable set of random initial controls.
 
 global OC;
-
-if nargin < 4
-    const = false;
-end
 
 scale = 1; % TODO
 
@@ -13,8 +9,14 @@ scale = 1; % TODO
 normal_controls = [timeslots, length(OC.system.B)];
 t_controls = [timeslots, 1];
 
-if const
-    initial_controls = scale * ones(normal_controls);
+if nargin == 4
+    % constant initial controls
+    if isscalar(const_value)
+        initial_controls = scale * const_value * ones(normal_controls);
+    else
+        % row vector, one value for each control field
+        initial_controls = scale * ones(timeslots, 1) * const_value;
+    end
 else
     % Generate random initial controls
     initial_controls = scale * randn(normal_controls);
@@ -24,7 +26,6 @@ fprintf('Tau values ');
 if optimize_tau
     fprintf('optimized.\n');
     tau_par = [0.25 * T, 0.75 * T]; % min, delta
-    %tau_c = 2*pi*rand(t_controls); % random
     tau_c = pi/2 * ones(t_controls); % halfway
     mask = [true(normal_controls), true(t_controls)];
 else
