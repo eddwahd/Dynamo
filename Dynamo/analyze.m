@@ -23,10 +23,9 @@ e_min = 1-sum(exp(-T*d))/n
 
 
 figure()
-subplot(3, 1, 1);
+subplot(2, 1, 1)
 plot_seq(OC.seq)
 
-h = subplot(3, 1, [2 3]);
-plot_stats(OC.stats, h)
+subplot(2, 1, 2)
+plot_stats(OC.stats)
 end
-
