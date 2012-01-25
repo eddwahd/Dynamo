@@ -1,9 +1,7 @@
-function x = control_condition()
+function self = condition(self)
 % Finds the fluence corresponding to the least-ill conditioning for a problem instance.
 
-% Ville Bergholm 2011
-  
-  global OC;
+
   q = 20;
   f = logspace(0, 4, 16);
   cond = zeros(length(f), q);
@@ -97,5 +95,8 @@ function c = conditioning(L, J)
   %p = J \ -L;  % in MATLAB, this does a least squares fit too(!)
   c = norm(p);
 end
+
+
+
 
 

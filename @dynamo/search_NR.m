@@ -1,12 +1,12 @@
-function term_reason = search_NR()
+function term_reason = search_NR(self)
 % Newton-Raphson search
-    
-global OC;
 
+fprintf('\nOptimizing algorithm: Newton-Raphson. Running...\n\n'); drawnow;
+    
 optimValues = struct('fval', 'nonsense');
 
 % which controls are we allowed to change?
-mask = OC.opt.control_mask;
+mask = self.opt.control_mask;
 
 
 %control_condition(mask); % preconditioned initial controls
@@ -37,8 +37,8 @@ for k = 1:50
   % update trust region size
   r = r_update(r, model, actual, err);
 
-  OC.opt.N_eval = OC.opt.N_eval + 1;
-  %OC.opt.last_grad_norm = sum(sum(grad.*grad));
+  self.opt.N_eval = self.opt.N_eval + 1;
+  %self.opt.last_grad_norm = sum(sum(grad.*grad));
 end
 end
 
