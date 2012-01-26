@@ -177,7 +177,7 @@ classdef control
         xlabel('Time')
         ylabel('Control amplitude')
         grid on
-
+        hold off
         %stairs(t, c)
         %c = [c; zeros(1,nc)]; % final time step is a dummy
         %for j=1:k

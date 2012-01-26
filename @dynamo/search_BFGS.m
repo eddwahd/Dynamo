@@ -28,6 +28,11 @@ problem.objective = @(x) goal_and_gradient_function_wrapper(self, x);
 problem.x0 = self.seq.get(self.opt.control_mask);
 problem.solver = 'fminunc';
 
+if isfield(user_options, 'plot_interval') && user_options.plot_interval
+    self.opt.plot_interval = user_options.plot_interval;
+    figure();
+end
+
 % try to minimise objective function to zero
 [x, cost, exitflag, output] = fminunc(problem.objective, problem.x0, problem.options);
 

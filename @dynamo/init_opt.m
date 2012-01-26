@@ -22,6 +22,8 @@ self.opt.term_cond = struct( ...
     'min_gradient_norm', 1e-20);
 
 
+self.opt.plot_interval = 0;
+
 self.opt.wall_start = now();
 self.opt.cpu_start = cputime();
 

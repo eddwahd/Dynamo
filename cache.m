@@ -76,13 +76,8 @@ classdef cache < handle
           self.U_needed_now = [false, false(temp)];
           self.L_needed_now = [false(temp), false]; 
 
-          % Note - certain gradient methods may cache additional computations
-
           self.g_is_stale = true;
           self.g = NaN;
-      
-      
-
       end
       
       

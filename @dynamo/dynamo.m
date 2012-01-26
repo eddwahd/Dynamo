@@ -1,8 +1,8 @@
 classdef dynamo < matlab.mixin.Copyable
 % Copyable handle class for DYNAMO optimizer objects.
 %
-% Contains the system description, optimization task, various
-% options and eventually the end result. This class glues together
+% Contains the optimization task, system description, control
+% sequence, various options and statistics. This class glues together
 % the functionality of the cache, qsystem and control classes.
 %
 % Governing equation: \dot(X)(t) = -(A +\sum_k u_k(t) B_k) X(t) = -G(t) X(t)
@@ -23,34 +23,22 @@ classdef dynamo < matlab.mixin.Copyable
     cache
   end
 
+  methods (Static)
+    function ret = version()
+    % Returns the current DYNAMO version.
+        ret = '1.3 alpha11';
+    end
+  end
   
   methods
     function self = dynamo(task, initial, final, H_drift, H_ctrl, L_drift)
     % Constructor
 
-        % Dynamo version
-        version = '1.3 alpha11';
-
-            disp (' ');
-            fprintf('DYNAMO - Quantum Dynamic Optimization Package v%s\n', version);
-            disp (' ');
-            disp (' ');
-            disp ('(c) Shai Machnes et al. 2010-2012');
-            disp ('email: shai.machnes at uni-ulm.de');
-            disp (' ');
-            disp ('All computer programs/code/scripts are released under the terms of the GNU Lesser General Public License 3.0 and Creative-Commons Attribution Share-Alike (see "LICENSE.txt" for details).');
-            disp ('If you use DYNAMO in your research, please add an attribution in the form of the following reference: S. Machnes et al, arXiv 1011.4874');
-            disp ('For the latest version of this software, guides and information, visit http://www.qlib.info');
-            disp ('  ');
-            disp ('DYNAMO initialized successfully.');
-            disp ('  ');    
-            disp ('  ');
-
         task = lower(task);
 
         %% Some basic data provenance
 
-        config.version = version;
+        config.version = dynamo.version();
         % Local time. TODO UTC or local time with timezone specifier would be better, but apparently MATLAB doesn't do that.
         config.date = datestr(now(), 31);
         config.task = task;
@@ -191,11 +179,10 @@ classdef dynamo < matlab.mixin.Copyable
 
 
     function cache_init(self, n_timeslots)
-    % FIXME used to set or change the number of time slots... this
-    % is where all the trash went
+    % Set up cache after the number of time slots changes.
         
-        %% Set up caching
-
+    % This is where all the bad code went.
+        
         if self.config.L_is_propagator
             L_end = eye(length(self.system.X_final)); % L: full reverse propagator
         else
