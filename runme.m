@@ -1,7 +1,7 @@
-function runme(seed)
+function dyn = runme(seed)
 % Simple optimization demo.
 
-% Ville Bergholm 2011
+% Ville Bergholm 2011-2012
 
 
 if nargin < 1
@@ -22,7 +22,7 @@ SP = (SX +1i*SY)/2;
 %% Define the physics of the problem
 
 % dimension vector for the quantum system
-dim = [2 2 2 2 2]; % n qubits
+dim = [2 2 2]; % n qubits
 D = prod(dim);
 
 
@@ -39,48 +39,41 @@ H_drift = heisenberg(dim, [0 0 4]) -op_sum(dim, @(k) (k+2)*SZ);
 
 % Control Hamiltonians / Liouvillians
 %[H_ctrl, control_type] = control(dim, 'xy', 2);
-%H_ctrl = horzcat(H_ctrl, 0.01 * superop_lindblad(dephase2));
 H_ctrl = {op_sum(dim, @(k) SX), op_sum(dim, @(k) SY)};
 control_type = '..';
 
 % transformed controls?
 control_par = {};
-%control_par = {[], [], [0, 1]};
-
 
 % Drift Liouvillian (noise / dissipation)
 %L_drift = 0.002 * superop_lindblad(depolarize1) +0.0013 * superop_lindblad(depolarize2);
 
+% gate
 initial = eye(D);
 final = qft(length(dim));
-%final = eye(prod(dim));
-% for pure state transfer
+
+% pure state transfer
 %initial = [1; 0; 0; 0];
 %final = [1; 0; 0; 1]/sqrt(2);
-% mixed states
+
+% mixed state transfer
 %initial = rand_positive(D);
 %final = rand_positive(D);
 
-dynamo_init('S gate', initial, final, H_drift, H_ctrl)
-%dynamo_init('SB gate', initial, final, H_drift, H_ctrl, L_drift)
-
-
-dynamo_init_control_type(control_type, control_par);
-
+dyn = dynamo('S gate', initial, final, H_drift, H_ctrl);
+%dyn = dynamo('SB gate', initial, final, H_drift, H_ctrl, L_drift);
 
 
 %% Initial controls
 
-%control_mask = control_rand(10, 20, true, true);
-control_mask = control_rand(125, 100, false);
+% random initial controls
+control_mask = dyn.init_control(125, 100, false, [], control_type, control_par);
 
 
 %% Now do the actual search
 
-dynamo_init_opt(control_mask);
+fprintf('\nUsing GRAPE (BFGS 2nd order update scheme, updating all time slices concurrently).\n\n    Please wait, this may take a while... \n\n'); drawnow;
+termination_reason = dyn.search_BFGS(control_mask, struct('Display', 'final'));
 
-fprintf('\nOptimizing algorithm: GRAPE (BFGS 2nd order update scheme, updating all time slices concurrently).\n\n    Please wait, this may take a while... \n\n'); drawnow;
-termination_reason = search_BFGS(optimset('Display', 'final'));
-%search_NR();
-
-analyze();
+dyn.analyze();
+end

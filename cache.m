@@ -91,20 +91,17 @@ classdef cache < handle
           self.g_is_stale = true;
       end
 
-      
-      function fill(self)
-      % Will invalidate everything, then re-calc everything in the cache.
-      % Used mostly for debugging (since it essentially overrides all matrix-op optimization mechanisms).
 
-          self.invalidate();
+      function mark_as_stale(self, changed_t_mask)
+      % Marks the selected timeslots as stale.
 
-          self.H_needed_now(:) = true;
-          self.P_needed_now(:) = true;
-          self.U_needed_now(:) = true;
-          self.L_needed_now(:) = true;
+          self.H_is_stale(changed_t_mask) = true;
+          self.P_is_stale(changed_t_mask) = true;
 
-          self.refresh();
-          self.g_func();
+          % Propagate the H_is_stale to the U and Ls.
+          self.U_is_stale( (find(self.H_is_stale, 1, 'first')+1):end) = true;
+          self.L_is_stale(1:find(self.H_is_stale, 1, 'last'))         = true;
+          self.g_is_stale = true;
       end
       
       

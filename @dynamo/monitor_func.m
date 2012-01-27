@@ -52,6 +52,6 @@ end
 self.stats.error(end+1) = optimValues.fval;
 self.stats.wall_time(end+1) = wt;
 self.stats.cpu_time(end+1)  = ct;
-self.stats.integral(end+1)  = self.seq.integral();
-self.stats.fluence(end+1)   = self.seq.fluence(self.system.M);
+self.stats.integral(end+1,:) = self.seq.integral();
+self.stats.fluence(end+1)    = self.seq.fluence(self.system.M);
 end

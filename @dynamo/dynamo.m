@@ -34,6 +34,10 @@ classdef dynamo < matlab.mixin.Copyable
     function self = dynamo(task, initial, final, H_drift, H_ctrl, L_drift)
     % Constructor
 
+        if nargin < 6
+            L_drift = 0;
+        end
+        
         task = lower(task);
 
         %% Some basic data provenance
@@ -217,16 +221,7 @@ classdef dynamo < matlab.mixin.Copyable
         if any(changed_t_mask)
             % actually update the controls
             self.seq = self.seq.set(new);
-            
-            self.cache.H_is_stale(changed_t_mask) = true;
-            self.cache.P_is_stale(changed_t_mask) = true;
-    
-            % Propagate the H_is_stale to the U and Ls.
-            self.cache.U_is_stale( (find(self.cache.H_is_stale, 1, 'first')+1):end) = true;
-            self.cache.L_is_stale(1:find(self.cache.H_is_stale, 1, 'last'))         = true;
-    
-            self.cache.g_is_stale = true;
-            self.cache.g = NaN;
+            self.cache.mark_as_stale(changed_t_mask);
         end
     end
 
@@ -236,21 +231,23 @@ classdef dynamo < matlab.mixin.Copyable
         self.cache.refresh(self.system, self.seq.tau, self.seq.fields);
     end
     
-    
-    function ret = X(self, k)
-    % Returns X(t_k), the controlled system at time t_k.
-    % If no k is given, returns the final state X(t_n).
-        
-        if nargin < 2
-            k = length(self.cache.H);
-        end
-        
-        % U{k} is the system at t = sum(tau(1:(k-1))) = t_{k-1}
-        self.cache.U_needed_now(k+1) = true;
+
+    function cache_fill(self)
+    % Will invalidate everything, then re-calc everything in the cache.
+    % Used mostly for debugging (since it essentially overrides all matrix-op optimization mechanisms).
+
+        self.cache.invalidate();
+
+        self.cache.H_needed_now(:) = true;
+        self.cache.P_needed_now(:) = true;
+        self.cache.U_needed_now(:) = true;
+        self.cache.L_needed_now(:) = true;
+
         self.cache_refresh();
-        ret = self.cache.U{k+1};
+        self.g_func();
     end
-  
+
+
     function ret = g_func(self, use_trace)
     % Computes the auxiliary function g := trace(X_f^\dagger * X(t_n)).
     % Used both for the goal function as well as its gradient.
@@ -277,6 +274,33 @@ classdef dynamo < matlab.mixin.Copyable
             self.cache.g = trace(ret);
         end
         self.cache.g_is_stale = false;
+    end
+  
+  
+    function ret = X(self, k)
+    % Returns X(t_k), the controlled system at time t_k.
+    % If no k is given, returns the final state X(t_n).
+        
+        if nargin < 2
+            k = length(self.cache.H);
+        end
+        
+        % U{k} is the system at t = sum(tau(1:(k-1))) = t_{k-1}
+        self.cache.U_needed_now(k+1) = true;
+        self.cache_refresh();
+        ret = self.cache.U{k+1};
+    end
+
+
+    function plot_X(self)
+    % Plots the evolution of the initial system as a function of time.
+    
+    % TODO for now it only handles state ops in vec representation
+        for k = 0:length(self.seq.tau)
+            q(k+1, :) = real(diag(inv_vec(self.X(k))));
+        end
+
+        plot([0; cumsum(self.seq.tau)], q);
     end
   end
 end

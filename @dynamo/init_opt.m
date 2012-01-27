@@ -1,4 +1,4 @@
-function init_opt(self, control_mask)
+function init_opt(self, control_mask, options)
 % Initialize the optimization module.
 % FIXME interplay with the search_* functions and their options, monitor_func.
 
@@ -21,8 +21,13 @@ self.opt.term_cond = struct( ...
     'max_cputime',         1e4, ...
     'min_gradient_norm', 1e-20);
 
-
-self.opt.plot_interval = 0;
+% should we plot intermediate results?
+if isfield(options, 'plot_interval') && options.plot_interval
+    self.opt.plot_interval = options.plot_interval;
+    figure();
+else
+    self.opt.plot_interval = 0;
+end
 
 self.opt.wall_start = now();
 self.opt.cpu_start = cputime();

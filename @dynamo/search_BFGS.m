@@ -1,8 +1,15 @@
-function term_reason = search_BFGS(self, user_options)
+function term_reason = search_BFGS(self, control_mask, user_options)
 % BFGS optimization.
 
-fprintf('\nOptimizing algorithm: BFGS. Running...\n\n'); drawnow;
-    
+
+if nargin < 3
+    user_options = {};
+end
+
+% initialize the optimization data structures
+self.init_opt(control_mask, user_options);
+
+
 % default options
 problem.options = optimset(...
     'MaxIter',      1e4,...
@@ -16,28 +23,25 @@ problem.options = optimset(...
     'Display',      'off');
 
 % additional user-defined options
-if nargin == 2
-    problem.options = optimset(problem.options, user_options);
-end
+problem.options = optimset(problem.options, user_options);
 
 % save a copy
 self.opt.BFGS_options = problem.options;
 
-
+% define the optimization problem
 problem.objective = @(x) goal_and_gradient_function_wrapper(self, x);
 problem.x0 = self.seq.get(self.opt.control_mask);
 problem.solver = 'fminunc';
 
-if isfield(user_options, 'plot_interval') && user_options.plot_interval
-    self.opt.plot_interval = user_options.plot_interval;
-    figure();
+fprintf('\nOptimizing algorithm: BFGS. Running...\n\n'); drawnow;
+try
+    % try to minimise objective function to zero
+    [x, cost, exitflag, output] = fminunc(problem.objective, problem.x0, problem.options);
+catch
+    keyboard()
 end
 
-% try to minimise objective function to zero
-[x, cost, exitflag, output] = fminunc(problem.objective, problem.x0, problem.options);
-
-self.update_controls(x, self.opt.control_mask); % It may be different than the last point evaluated, and there is no problem-space 
-
+self.update_controls(x, self.opt.control_mask); % It may be different than the last point evaluated
 term_reason = self.opt.term_reason;
 end
 
