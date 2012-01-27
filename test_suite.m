@@ -1,4 +1,4 @@
-function control_mask = test_suite(p)
+function [dyn, mask] = test_suite(p)
 % Implementation of the test cases from the paper
 % S. Machnes et al., arXiv:1011.4874
 % Ville Bergholm 2011
@@ -40,7 +40,7 @@ if 1 <= p && p <= 12
   fprintf('Ising chain, %d qubits, XY control.\n', q)
   dim = 2 * ones(1, q);
   H = heisenberg(dim, 2*[0 0 1]);
-  C = control(dim, 'xy');
+  C = control_ops(dim, 'xy');
 
 else
   switch p
@@ -49,7 +49,7 @@ else
     fprintf('Completely ZZ-coupled graph, 4 qubits, XY control.\n')
     H_CS = heisenberg(dim, 2*[0 0 1]) +mkron(0.5 * SZ, speye(4,4), SZ);
     H = H_CS +mkron(0.5 * SZ, I, SZ, I) +mkron(0.5 * I, SZ, I, SZ);
-    C = control(dim, 'xy');
+    C = control_ops(dim, 'xy');
     final = expm(-1j * pi/2 * H_CS); % target: C_4 cluster state
     
   case {15, 16}
@@ -74,7 +74,7 @@ else
     dim = 2 * ones(1, q);
     fprintf('Heisenberg chain with bias, %d qubits, Z control.\n', q)
     H = heisenberg(dim, 2*[1 1 1]) + op_sum(dim, -10*SX);
-    C = control(dim, 'z');
+    C = control_ops(dim, 'z');
     final = qft(q);
     
   case {20, 21}
@@ -82,7 +82,7 @@ else
     dim = 2 * ones(1, q);
     fprintf('Heisenberg chain, %d qubits, XY control at one end.\n', q)
     H = heisenberg(dim, 2*[1 1 1]);
-    C = control(dim, 'xy', q - 2);
+    C = control_ops(dim, 'xy', q - 2);
     final = rand_U(prod(dim));
 
   case {22, 23}
@@ -104,7 +104,7 @@ end
 fprintf('\n')
 initial = eye(size(final));
 
-dynamo_init('S gate', initial, final, H, C)
+dyn = dynamo('S gate', initial, final, H, C);
 
 
 
@@ -117,5 +117,5 @@ T = [2, 2, 3, 4, 6, 7, 10, 12, 20, 15, 20, 25,...
 
 
 % Set up random initial controls.
-control_mask = control_rand(T(p), timeslots(p), false);
+mask = dyn.init_control(T(p), timeslots(p), false, []);
 end

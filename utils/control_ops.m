@@ -1,5 +1,5 @@
-function [C, control_type] = control(dim, ctrl, s)
-% Returns a cell vector of angular momentum control operators.
+function [C, control_type] = control_ops(dim, ctrl, s)
+% Returns a cell vector of control Hamiltonians (angular momentum ops).
 %  C = control(dim, ctrl [, s])
 %
 %  dim is the system dimension vector.
@@ -7,7 +7,7 @@ function [C, control_type] = control(dim, ctrl, s)
 %  which controls are to be generated (for all the subsystems).
 %  Control operators are generated for the first s subsystems.
 
-% Ville Bergholm 2011
+% Ville Bergholm 2011-2012
 
 
 n = length(dim);
