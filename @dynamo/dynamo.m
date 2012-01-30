@@ -20,13 +20,22 @@ classdef dynamo < matlab.mixin.Copyable
   end
 
   properties (Transient)
-    cache
+    cache % Do not save the cache on disk since it may be huge and can be recomputed.
   end
 
   methods (Static)
     function ret = version()
     % Returns the current DYNAMO version.
-        ret = '1.3 alpha11';
+        ret = '1.3 alpha12';
+    end
+
+
+    function obj = loadobj(obj)
+    % Re-initializes the cache (which is not saved) during loading.
+        if isstruct(obj)
+            error('Backwards compatibility of saved objects not yet implemented.')
+        end
+        obj.cache_init(length(obj.seq.tau));
     end
   end
   

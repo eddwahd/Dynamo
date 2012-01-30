@@ -25,8 +25,8 @@ classdef cache < handle
       L_needed_now
       
       calcPfromHfunc
-      H_v = {};
-      H_eig_factor = {};
+      H_v
+      H_eig_factor
   end
     
   methods
