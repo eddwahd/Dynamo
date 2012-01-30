@@ -2,23 +2,29 @@ function stop = monitor_func(self, x, optimValues, state)
 % Executed once every iteration during optimization, decides if we should stop here.
     
 
-stop = false;
-
 wt = (now() - self.opt.wall_start) * 24*60*60; % elapsed time in seconds
 ct = cputime() - self.opt.cpu_start;
 
 
-% TODO some of these are already present in optimValues...
-self.opt.N_iter = self.opt.N_iter + 1;
+%% Plot the sequence every now and then
 
-% plot the sequence every now and then
-if self.opt.plot_interval && mod(self.opt.N_iter, self.opt.plot_interval) == 1
+if self.opt.plot_interval && mod(self.opt.N_iter, self.opt.plot_interval) == 0
   cla();
   self.seq.plot();
-  drawnow();
+end
+drawnow(); % flush drawing events and callbacks (incl. user interrupts)
+
+% check for user interrupt
+stop = self.opt.stop;
+if stop
+    self.opt.term_reason = 'User interrupt';
 end
 
+
 %% Check termination conditions
+
+% TODO some of these are already present in optimValues...
+self.opt.N_iter = self.opt.N_iter + 1;
 
 if self.opt.N_eval >= self.opt.term_cond.max_loop_count
     self.opt.term_reason = 'Loop count limit reached';

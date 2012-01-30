@@ -164,19 +164,23 @@ classdef control
         for j=1:length(t)-1
             x = [t(j), t(j+1), t(j+1), t(j)];
     
+            % use painter's algorithm
             [dummy, I] = sort(abs(c(j, :)), 2, 'descend'); % dummy instead of ~ for Octave
             for k=1:nc
                 y = c(j, I(k));
-                p = patch(x, [0, 0, y, y], 1);
-                set(p, 'FaceColor','flat',  'CData',I(k), 'CDataMapping','scaled')
+                p(k) = patch(x, [0, 0, y, y], 1);
+                set(p(k), 'FaceColor','flat',  'CData',I(k), 'CDataMapping','scaled')
+            end
+            if j == 1
+                p_colors(I) = p; % HACK, to get the legend right
             end
         end
-
         axis tight
         title('Control sequence')
         xlabel('Time')
         ylabel('Control amplitude')
         grid on
+        legend(p_colors, char('0' + (1:nc)'));
         hold off
         %stairs(t, c)
         %c = [c; zeros(1,nc)]; % final time step is a dummy

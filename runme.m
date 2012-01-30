@@ -73,7 +73,7 @@ control_mask = dyn.init_control(125, 100, false, [], control_type, control_par);
 %% Now do the actual search
 
 fprintf('\nUsing GRAPE (BFGS 2nd order update scheme, updating all time slices concurrently).\n\n    Please wait, this may take a while... \n\n'); drawnow;
-termination_reason = dyn.search_BFGS(control_mask, struct('Display', 'final'));
-
+termination_reason = dyn.search_BFGS(control_mask,...
+    struct('Display', 'final', 'plot_interval', 1));
 dyn.analyze();
 end

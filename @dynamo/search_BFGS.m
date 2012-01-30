@@ -37,11 +37,11 @@ fprintf('\nOptimizing algorithm: BFGS. Running...\n\n'); drawnow;
 try
     % try to minimise objective function to zero
     [x, cost, exitflag, output] = fminunc(problem.objective, problem.x0, problem.options);
+    self.update_controls(x, self.opt.control_mask); % It may be different than the last point evaluated
 catch
     keyboard()
 end
 
-self.update_controls(x, self.opt.control_mask); % It may be different than the last point evaluated
 term_reason = self.opt.term_reason;
 end
 
@@ -53,5 +53,5 @@ function [v, grad] = goal_and_gradient_function_wrapper(self, x)
 
     self.update_controls(x, self.opt.control_mask);
     [v, grad] = self.config.error_func(self, self.opt.control_mask);
-    self.opt.last_grad_norm = sum(sum(grad .* grad));
+    self.opt.last_grad_norm = sqrt(sum(sum(grad .* grad)));
 end
