@@ -1,30 +1,38 @@
 function [H] = heisenberg(dim, J)
-% Heisenberg spin chain Hamiltonian.
+% Heisenberg spin network Hamiltonian
 %
-%  J = [1 1 1] gives the isotropic Heisenberg coupling.
-%  J = [1 1 0] gives the XY coupling.
-%  J = [0 0 1] gives the Ising coupling.
+% dim is the dimension vector of the system.
+% J is either a cell vector of three upper triangular coupling
+% matrices, or a function handle with J(s, a, b) giving the
+% coefficient of the Hamiltonian term S_sa * S_sb, where
+% S_sa is the s-component of the angular momentum of spin a.
+%
+% Examples: J = @(s,a,b) C(s)
+%
+%  C = [1 1 1] gives the isotropic Heisenberg coupling.
+%  C = [1 1 0] gives the XY coupling.
+%  C = [0 0 1] gives the Ising coupling.
     
-% Ville Bergholm 2011
+% Ville Bergholm 2011-2012
 
 
   if isa(J, 'function_handle')
     Jfunc = J;
   else
-    Jfunc = @(k,s) J(s);
+    Jfunc = @(s, a, b) J{s}(a, b);
   end
     
-  n = length(dim); % number of spins in chain
+  n = length(dim); % number of spins in the network
   H = sparse(0);
-  A = angular_momentum(dim(1)); % spin ops for first site
 
-  for k=1:n-1
-    % coupling between spins k and k+1: A \cdot B
-    B = angular_momentum(dim(k+1)); % spin ops
-    temp = Jfunc(k, 1) * kron(A{1}, B{1}) +Jfunc(k, 2) * kron(A{2}, B{2}) +Jfunc(k, 3) * kron(A{3}, B{3});
-    H = H + mkron(speye(prod(dim(1:k-1))), temp, speye(prod(dim(k+2:end))));
-    
-    % ops for next site
-    A = B;
+
+  for a = 1:n-1
+      A = angular_momentum(dim(a)); % spin ops for first site
+      for b = a+1:n
+          B = angular_momentum(dim(b)); % and the second
+          for s = 1:3
+              H = H + op_list({{Jfunc(s, a, b) * A{s}, a; B{s}, b}}, dim);
+          end
+      end
   end
 end
