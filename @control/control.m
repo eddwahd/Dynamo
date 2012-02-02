@@ -28,10 +28,6 @@ classdef control
 
         fprintf('Timeslots: %d\nControls per slot: %d + tau\n\n', n_timeslots, n_controls);
         
-        % TODO
-        %if any(control_type(self.system.B_is_superop) == '.')
-        %    disp('Warning: Liouvillian control ops with possibly negative control values.')
-        %end
 
         %% Check control parameters
         % For now control_par doesn't have separate entries for each timeslot
@@ -55,6 +51,18 @@ classdef control
     end
 
     
+    function ret = n_timeslots(self)
+    % Returns the number of time slots.
+        ret = size(self.tau_par, 1);
+    end
+
+    
+    function ret = n_controls(self)
+    % Returns the number of control fields (not including tau).
+        ret = length(self.control_type);
+    end
+    
+    
     function ret = get(self, control_mask)
     % Returns the raw controls corresponding to the mask given, or all
     % of them if no mask is given.
@@ -75,7 +83,7 @@ classdef control
     % Uses the (fixed) control parameters.
 
         %% Check the number of control fields. The last column are the tau controls.
-        n_controls = length(self.control_type);
+        n_controls = self.n_controls();
         if size(raw, 2) ~= n_controls + 1
             error('Number of controls given does not match the number of control fields.')
         end
@@ -120,6 +128,77 @@ classdef control
     end
 
 
+    function ret = inv_transform(self, fields)
+    % Given a set of controls field values, returns the
+    % corresponding raw controls (not including tau).
+
+        n_controls = self.n_controls();
+        ret = zeros(1, n_controls);
+        for k=1:n_controls
+            switch self.control_type(k)
+              case '.'  % no transformation
+                ret(k) = fields(k);
+        
+              case 'p'  % strictly nonnegative, u_k = r_k^2
+                if fields(k) < 0
+                    error('Field %d not nonnegative.', k)
+                end
+                ret(k) = sqrt(fields(k));
+                
+              case 'm'  % minimum and delta, u_k = min + delta * 0.5 * (1 - cos(r_k))
+                par = self.control_par{k};
+                ret(k) = acos(1 - (fields(k) - par(1)) * (2 / par(2)));
+                if imag(ret(k))
+                    error('Field %d not within the parameter limits.')
+                end
+              otherwise
+                error('Unknown control type.')
+            end
+        end
+    end
+    
+    
+    function self = split(self, bins, n)
+    % Refines the sequence by splitting the given bins into n equal pieces.
+    % If an empty vector of bin numbers is given, the entire sequence is refined.
+
+        n_timeslots_old = self.n_timeslots();
+        if isempty(bins)
+            bins = 1:n_timeslots_old;
+        else
+            bins = unique(bins); % also sorts
+        end
+        n_timeslots = n_timeslots_old + (n-1) * length(bins);
+
+        raw = zeros(n_timeslots, size(self.raw, 2));
+        tau_par = zeros(n_timeslots, 2);
+        % source and destination indices
+        si = 1;
+        di = 1;
+        for k=1:length(bins)
+            b = bins(k);
+            % a run of unchanged slots
+            run = b -1 -si;
+            tau_par(di:di+run, :) = self.tau_par(si:si+run, :); 
+            raw(di:di+run, :) = self.raw(si:si+run, :); 
+            % a split slot
+            di = di+run+1;
+            % tau_par slots are actually split
+            tau_par(di:di+n-1, :) = ones(n, 1) * self.tau_par(b, :) / n;
+            % raw slots are just multiplied
+            raw(di:di+n-1, :) = ones(n, 1) * self.raw(b, :);
+            si = b + 1;
+            di = di + n;
+        end
+        % final run of unchanged slots
+        tau_par(di:end, :) = self.tau_par(si:end, :); 
+        raw(di:end, :) = self.raw(si:end, :); 
+
+        % transform the new controls
+        self.tau_par = tau_par;
+        self = set(self, raw);
+    end
+    
 
     function ret = fluence(self, M)
     % Computes the total fluence of the control fields.
@@ -133,7 +212,7 @@ classdef control
     % TODO relation to signal energy? E = F^2 / \hbar?
 
         ret = 0;
-        n_timeslots = size(self.fields, 1);
+        n_timeslots = self.n_timeslots();
         for k = 1:n_timeslots
             c = self.fields(k, :); % all controls for this timeslot
             ret = ret +c * M * c.' * self.tau(k);
@@ -156,7 +235,7 @@ classdef control
         % start times for pulses
         t = [0; cumsum(self.tau)];
         c = self.fields;
-        nc = size(c, 2); % number of controls
+        nc = self.n_controls();
 
         colormap(jet)
         set(gca, 'CLim', [0 nc])

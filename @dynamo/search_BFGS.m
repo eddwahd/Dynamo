@@ -34,14 +34,11 @@ problem.x0 = self.seq.get(self.opt.control_mask);
 problem.solver = 'fminunc';
 
 fprintf('\nOptimizing algorithm: BFGS. Running...\n\n'); drawnow;
-try
-    % try to minimise objective function to zero
-    [x, cost, exitflag, output] = fminunc(problem.objective, problem.x0, problem.options);
-    self.update_controls(x, self.opt.control_mask); % It may be different than the last point evaluated
-catch
-    keyboard()
-end
 
+% try to minimise objective function to zero
+[x, cost, exitflag, output] = fminunc(problem.objective, problem.x0, problem.options);
+
+self.update_controls(x, self.opt.control_mask); % It may be different than the last point evaluated
 term_reason = self.opt.term_reason;
 end
 

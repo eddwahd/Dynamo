@@ -35,7 +35,7 @@ classdef dynamo < matlab.mixin.Copyable
         if isstruct(obj)
             error('Backwards compatibility of saved objects not yet implemented.')
         end
-        obj.cache_init(length(obj.seq.tau));
+        obj.cache_init();
     end
   end
   
@@ -191,7 +191,7 @@ classdef dynamo < matlab.mixin.Copyable
     end
 
 
-    function cache_init(self, n_timeslots)
+    function cache_init(self)
     % Set up cache after the number of time slots changes.
         
     % This is where all the bad code went.
@@ -202,10 +202,50 @@ classdef dynamo < matlab.mixin.Copyable
             L_end = self.system.X_final'; % L: X_final' propagated backwards
         end
 
-        self.cache = cache(n_timeslots, self.system.X_initial, L_end, isequal(self.config.gradient_func, @gradient_exact));
+        self.cache = cache(self.seq.n_timeslots(), self.system.X_initial, L_end, isequal(self.config.gradient_func, @gradient_exact));
     end
 
 
+    function seq_init(self, n_timeslots, tau_par, varargin)
+    % Create the control sequence and a matching cache.
+    % The varargin are the control_type and control_par cell vectors.
+
+        n_controls = length(self.system.B);
+        self.seq = control(n_timeslots, n_controls, tau_par, varargin{:});
+        if any(self.seq.control_type(~self.system.B_is_Hamiltonian) == '.')
+            disp('Warning: Liouvillian control ops with possibly negative control values.')
+        end
+    
+        self.cache_init();
+    end
+
+
+    function mask = full_mask(self, optimize_tau)
+    % Returns a full control mask.
+        
+        if nargin < 2
+            optimize_tau = false;
+        end
+        n_timeslots = self.seq.n_timeslots();
+        n_controls = self.seq.n_controls();
+
+        % shape vectors
+        f_shape = [n_timeslots, n_controls];
+        t_shape = [n_timeslots, 1];
+
+        %% Build the control mask
+
+        fprintf('Tau values ');
+        if optimize_tau
+            fprintf('optimized.\n');
+            mask = [true(f_shape), true(t_shape)];
+        else
+            fprintf('fixed.\n')
+            mask = [true(f_shape), false(t_shape)];
+        end
+    end
+    
+    
     function update_controls(self, x, control_mask)
     % Updates selected controls.
     %
@@ -310,6 +350,7 @@ classdef dynamo < matlab.mixin.Copyable
         end
 
         plot([0; cumsum(self.seq.tau)], q);
+        legend(char('0' + (1:size(q, 2))'));
     end
   end
 end
