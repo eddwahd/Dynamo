@@ -40,7 +40,7 @@ classdef dynamo < matlab.mixin.Copyable
   end
   
   methods
-    function self = dynamo(task, initial, final, H_drift, H_ctrl, L_drift)
+    function self = dynamo(task, initial, final, H_drift, H_ctrl, L_drift, labels)
     % Constructor
 
         if nargin < 6
@@ -78,8 +78,8 @@ classdef dynamo < matlab.mixin.Copyable
         switch system_str
           case {'s'}
             %% Closed system S
-            if nargin ~= 5
-                error('Too many parameters.')
+            if nargin == 6
+                error('L_drift not used in closed systems.')
             end
     
             switch task_str
@@ -185,6 +185,11 @@ classdef dynamo < matlab.mixin.Copyable
         % We use the Hilbert-Schmidt inner product (and the induced Frobenius norm) throughout the code.
         sys.norm2 = norm2(sys.X_final);
 
+        if nargin == 7
+            sys = sys.set_labels(labels);
+        end
+
+        
         % store the prepared fields
         self.config = config;
         self.system = sys;
@@ -350,7 +355,13 @@ classdef dynamo < matlab.mixin.Copyable
         end
 
         plot([0; cumsum(self.seq.tau)], q);
-        legend(char('0' + (1:size(q, 2))'));
+        xlabel('Time');
+        ylabel('Population');
+        if isempty(self.system.labels)
+            legend(char('0' + (1:size(q, 2))'));
+        else
+            legend(self.system.labels);
+        end
     end
   end
 end

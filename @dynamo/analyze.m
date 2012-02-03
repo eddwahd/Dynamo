@@ -1,6 +1,9 @@
 function analyze(self)
 % Analyzes the results of an optimization run.
 
+% TODO clean up
+delete(self.opt.UI_fig);
+self.opt.UI_fig = [];
 
 err = self.config.error_func(self);
 fprintf('Final normalized error: %g\n    Wall time: %g s\n    CPU  time: %g s\nTermination reason: %s\n\n\n', ...
