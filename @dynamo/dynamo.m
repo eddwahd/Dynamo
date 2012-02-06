@@ -67,6 +67,7 @@ classdef dynamo < matlab.mixin.Copyable
         config.date = datestr(now(), 31);
         config.task = task;
         config.L_is_propagator = false;
+        config.description = [];
         
         [system_str, rem] = strtok(task);
         [task_str, rem] = strtok(rem);
@@ -357,21 +358,59 @@ classdef dynamo < matlab.mixin.Copyable
     end
 
 
-    function plot_X(self)
+    function plot_X(self, dt)
     % Plots the evolution of the initial system as a function of time.
-    
-    % TODO for now it only handles state ops in vec representation
-        for k = 0:length(self.seq.tau)
-            q(k+1, :) = real(diag(inv_vec(self.X(k))));
-        end
+    % TODO for now it only handles state ops in vec representation.
 
-        plot([0; cumsum(self.seq.tau)], q);
+        n = self.seq.n_timeslots()
+        
+        if (nargin < 2)
+            % one plot point per timeslot
+            %out_func = @(x) x; % no output function given, use a NOP
+            for k = 0:n
+                res(k+1, :) = state_pops(self.X(k));
+            end
+            t = [0; cumsum(self.seq.tau)];
+        else
+            % use the given dt for plotting
+            t = [0];
+            X = self.X(0);
+            res(1, :) = state_pops(X);
+
+            for k = 1:n
+                X_end = self.X(k); % make sure the cache is up-to-date
+                G = self.cache.H{k};
+                tau = self.seq.tau(k);
+                
+                n_steps = ceil(tau / dt); % at least one point per timeslot
+                step = tau / n_steps;
+                P = expm(-step * G);
+                for q = 1:n_steps
+                    X = P * X;
+                    res(end+1, :) = state_pops(X);
+                end
+                temp = t(end);
+                t = [t, linspace(temp+step, temp+tau, n_steps)];
+                X = X_end; % stability...
+            end
+        end
+        plot(t , res);
+        axis([0, t(end), 0, 1]);
+        title(self.config.description);
         xlabel('Time');
         ylabel('Population');
         if isempty(self.system.labels)
             legend(char('0' + (1:size(q, 2))'));
         else
             legend(self.system.labels);
+        end
+
+
+        function pop = state_pops(x)
+        % Returns the diagonal of a vectorized state operator.
+        % NOTE: due to the horrible scoping of MATLAB, we use small x
+        % here as not to shadow the capital X in the parent function.
+            pop = real(diag(inv_vec(x)));
         end
     end
   end
