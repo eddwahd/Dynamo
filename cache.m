@@ -1,5 +1,5 @@
-classdef cache < handle
-% Handle class for doing the heavy computing and storing the results.
+classdef cache < matlab.mixin.Copyable
+% Copyable handle class for doing the heavy computing and storing the results.
 
 % Shai Machnes   2010-2011
 % Ville Bergholm 2011-2012

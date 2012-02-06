@@ -38,6 +38,17 @@ classdef dynamo < matlab.mixin.Copyable
         obj.cache_init();
     end
   end
+
+  methods (Access = protected)
+    function cp = copyElement(self)
+    % Override the default copyElement method to provide deep copies.
+
+        % Make a shallow copy of everything
+        cp = copyElement@matlab.mixin.Copyable(self);
+        % Make a deep copy of all handle-type properties
+        cp.cache = copy(self.cache);
+    end
+  end
   
   methods
     function self = dynamo(task, initial, final, H_drift, H_ctrl, L_drift, labels)
