@@ -1,4 +1,4 @@
-function [grad] = gradient_finite_diff(self, control_mask, g, epsilon)
+function [grad] = gradient_finite_diff(self, control_mask, epsilon)
 % Gradient of the auxiliary function g by finite difference method.
 %
 % g'(x) = (g(x + eps) - g(x))/eps
@@ -13,6 +13,8 @@ self.cache.H_needed_now(slot_mask) = true;
 self.cache.U_needed_now([slot_mask; false]) = true;  % U_{slot}
 self.cache.L_needed_now([false; slot_mask]) = true;  % L_{slot+1}
 self.cache_refresh();
+
+g = self.g_func();
 
 % tau as last column of controls
 tau_c = size(control_mask, 2);
