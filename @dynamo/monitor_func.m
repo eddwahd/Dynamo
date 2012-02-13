@@ -1,23 +1,31 @@
 function stop = monitor_func(self, x, optimValues, state)
 % Executed once every iteration during optimization, decides if we should stop here.
-    
 
+
+stop = false;
 wt = (now() - self.opt.wall_start) * 24*60*60; % elapsed time in seconds
 ct = cputime() - self.opt.cpu_start;
 
 
 %% Plot the sequence every now and then
 
-if self.opt.plot_interval && mod(self.opt.N_iter, self.opt.plot_interval) == 0
-  cla();
-  self.seq.plot();
-end
 drawnow(); % flush drawing events and callbacks (incl. user interrupts)
 
 % check for user interrupt
-stop = self.opt.stop;
-if stop
+if isempty(self.opt.UI_fig)
     self.opt.term_reason = 'User interrupt';
+    stop = true;
+else
+    if self.opt.plot_interval && mod(self.opt.N_iter, self.opt.plot_interval) == 0
+        % Plot the current sequence in the UI figure.
+        h = self.opt.UI_fig;
+        % It's incredible how much work it takes just to make
+        % MATLAB not steal window focus when it plots something.
+        set(0, 'CurrentFigure', h);
+        ax = get(h, 'CurrentAxes');
+        self.seq.plot(ax, true);
+        drawnow();
+    end
 end
 
 

@@ -229,17 +229,38 @@ classdef control
     
 
 
-    function plot(self)
+    function plot(self, ax, update)
     % Plots a control sequence using superposed bars.
 
+        if nargin < 2
+            % If no axes are given, use the current ones.
+            ax = gca();
+        end
+        if nargin < 3
+            update = false;
+        end
+        
+        nc = self.n_controls();
+        
+        if update
+            cla(ax);
+        else
+            % things that don't change and aren't deleted by cla
+            colormap(jet)
+            set(ax, 'CLim', [0 nc])
+            title(ax, 'Control sequence')
+            xlabel(ax, 'Time')
+            ylabel(ax, 'Control amplitude')
+            grid(ax, 'on')
+        end
+        
         % start times for pulses
         t = [0; cumsum(self.tau)];
         c = self.fields;
-        nc = self.n_controls();
 
-        colormap(jet)
-        set(gca, 'CLim', [0 nc])
-        hold on
+        % set new axis limits
+        axis(ax, [0, t(end), min(c(:)), max(c(:))]);
+        hold(ax, 'on');
         for j=1:length(t)-1
             x = [t(j), t(j+1), t(j+1), t(j)];
     
@@ -254,13 +275,9 @@ classdef control
                 p_colors(I) = p; % HACK, to get the legend right
             end
         end
-        axis tight
-        title('Control sequence')
-        xlabel('Time')
-        ylabel('Control amplitude')
-        grid on
-        legend(p_colors, char('0' + (1:nc)'));
-        hold off
+        hold(ax, 'off')
+        legend(ax, p_colors, char('0' + (1:nc)')); % cla deletes this
+
         %stairs(t, c)
         %c = [c; zeros(1,nc)]; % final time step is a dummy
         %for j=1:k
