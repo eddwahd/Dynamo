@@ -259,7 +259,7 @@ classdef control
         c = self.fields;
 
         % set new axis limits
-        axis(ax, [0, t(end), min(c(:)), max(c(:))]);
+        axis(ax, [0, t(end), min(c(:)), max(c(:))+1e-3]);
         hold(ax, 'on');
         for j=1:length(t)-1
             x = [t(j), t(j+1), t(j+1), t(j)];

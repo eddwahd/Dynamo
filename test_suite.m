@@ -1,7 +1,8 @@
-function [dyn, mask] = test_suite(p)
+function dyn = test_suite(p)
 % Implementation of the test cases from the paper
 % S. Machnes et al., arXiv:1011.4874
-% Ville Bergholm 2011
+
+% Ville Bergholm 2011-2012
 
 
 
@@ -10,7 +11,7 @@ function [dyn, mask] = test_suite(p)
 SX = [0 1; 1 0];
 SY = [0 -1i; 1i 0];
 SZ = [1 0; 0 -1];
-I = speye(2,2);
+I = eye(2);
 
 CNOT = [1 0 0 0; 0 1 0 0; 0 0 0 1; 0 0 1 0];
 
@@ -39,7 +40,7 @@ if 1 <= p && p <= 12
   end    
   fprintf('Ising chain, %d qubits, XY control.\n', q)
   dim = 2 * ones(1, q);
-  H = heisenberg(dim, 2*[0 0 1]);
+  H = heisenberg_chain(dim, 2*[0 0 1]);
   C = control_ops(dim, 'xy');
 
 else
@@ -47,25 +48,32 @@ else
   case {13, 14}
     dim = [2 2 2 2];
     fprintf('Completely ZZ-coupled graph, 4 qubits, XY control.\n')
-    H_CS = heisenberg(dim, 2*[0 0 1]) +mkron(0.5 * SZ, speye(4,4), SZ);
-    H = H_CS +mkron(0.5 * SZ, I, SZ, I) +mkron(0.5 * I, SZ, I, SZ);
+    J = 2 * [0 0 1]; % Ising coupling
+    C4 = diag(ones(1, 3), 1) +diag(1, 3); % C_4 connection graph
+    C_full = C4 + diag(ones(1, 2), 2); % full connection graph
+
+    H_C4 = heisenberg(dim, @(s,a,b) J(s)*C4(a,b));
+    H    = heisenberg(dim, @(s,a,b) J(s)*C_full(a,b));
     C = control_ops(dim, 'xy');
-    final = expm(-1j * pi/2 * H_CS); % target: C_4 cluster state
+    final = expm(-1j * pi/2 * H_C4); % target: C_4 cluster state
     
   case {15, 16}
     % NV centers in diamond
-    q = 2;
+    error('Not implemented yet.')
+    dim = [2 2];
+    fprintf('NV centers in diamond.\n')
     E = 2*pi * [-134.825, -4.725, 4.275, 135.275]; % MHz
     mu = [1, 1/3.5, 1/1.4, 1/1.8];
-    % FIXME controls?
+
     H = diag(E) +2*pi * 135 * diag([1, 0, 0, -1]);
+    % TODO C = ;
     final = CNOT;
 
   case {17, 18}
     q = 5;
     dim = 2 * ones(1, q);
     fprintf('Ising chain with Stark shift, %d qubits, uniform XY control.\n', q)
-    H = heisenberg(dim, 2*[0 0 1]) + op_sum(dim, @(k) -SZ*(2+k));
+    H = heisenberg_chain(dim, 2*[0 0 1]) + op_sum(dim, @(k) -SZ*(2+k));
     C = {op_sum(dim, 0.5*SX), op_sum(dim, 0.5*SY)};
     final = qft(q);
     
@@ -73,7 +81,7 @@ else
     q = 5;
     dim = 2 * ones(1, q);
     fprintf('Heisenberg chain with bias, %d qubits, Z control.\n', q)
-    H = heisenberg(dim, 2*[1 1 1]) + op_sum(dim, -10*SX);
+    H = heisenberg_chain(dim, 2*[1 1 1]) + op_sum(dim, -10*SX);
     C = control_ops(dim, 'z');
     final = qft(q);
     
@@ -81,7 +89,7 @@ else
     q = 3 +p -20;
     dim = 2 * ones(1, q);
     fprintf('Heisenberg chain, %d qubits, XY control at one end.\n', q)
-    H = heisenberg(dim, 2*[1 1 1]);
+    H = heisenberg_chain(dim, 2*[1 1 1]);
     C = control_ops(dim, 'xy', q - 2);
     final = rand_U(prod(dim));
 
@@ -108,14 +116,24 @@ dyn = dynamo('S gate', initial, final, H, C);
 
 
 
-%% Controls
+%% Initial control sequence
 
 timeslots = [30, 40, 128, 64, 120, 140, 128, 128, 64, 300, 300, 64,...
              128, 128, 40, 64, 1000, 1000, 300, 64, 128, 100, 50];
 T = [2, 2, 3, 4, 6, 7, 10, 12, 20, 15, 20, 25,...
      7, 12, 2, 5, 125, 150, 30, 15, 40, 15, 5];
 
+dyn.seq_init(timeslots(p), T(p) * [1, 0]);
 
 % Set up random initial controls.
-mask = dyn.init_control(T(p), timeslots(p), false, []);
+dyn.easy_control([]);
+end
+
+
+function H = heisenberg_chain(dim, J)
+% 1D chain of qubits with uniform XX/YY/ZZ couplings defined by vector J.
+
+n = length(dim);
+C = diag(ones(1, n-1), 1); % topology: linear chain
+H = heisenberg(dim, @(s,a,b) J(s)*C(a,b));
 end

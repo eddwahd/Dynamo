@@ -1,9 +1,6 @@
 function analyze(self)
 % Analyzes the results of an optimization run.
 
-% TODO clean up
-delete(self.opt.UI_fig);
-self.opt.UI_fig = [];
 
 err = self.config.error_func(self);
 fprintf('Final normalized error: %g\n    Wall time: %g s\n    CPU  time: %g s\nTermination reason: %s\n\n\n', ...
@@ -21,26 +18,17 @@ e_max = 1-exp(-T*sum(d)/n)
 e_min = 1-sum(exp(-T*d))/n
 
 
+% plot the final sequence and some analytics
 figure()
 subplot(2, 1, 1)
 self.seq.plot()
 
 subplot(2, 1, 2)
-
-%handle = gca();
-%pos = get(handle, 'position');
-%h = (pos(4)-pos(2))/2;
-%dy = pos(4)/2; 
-%subplot('Position', [pos(1) 2*pos(2)+h pos(3) h]) 
-%subplot('Position', [pos(1) pos(2) pos(3) h]) 
-
-f = @loglog; %@semilogy % @plot;
-[ax, h1, h2] = plotyy(self.stats.wall_time, abs(self.stats.error), self.stats.wall_time, self.stats.integral, f);
+[ax, h1, h2] = plotyy(self.stats.wall_time, abs(self.stats.error), ...
+                      self.stats.wall_time, self.stats.integral, 'semilogy', 'plot');
 xlabel('Wall time (s)')
 set(get(ax(1),'Ylabel'),'String','Normalized error') 
 set(get(ax(2),'Ylabel'),'String','Control integral') 
 grid on
 set(h2,'LineStyle','--')
-
-
 end
