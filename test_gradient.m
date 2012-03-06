@@ -1,22 +1,26 @@
-function test_gradient()
+function [err, s] = test_gradient()
 % Checks if the computed gradient of the error function is accurate.
 % Uses one of the test suite problems.
 
-% Ville Bergholm 2011
+% Ville Bergholm 2011-2012
 
 
 % set up a system, random controls
-control_mask = test_suite(17);
-x = control_get(control_mask);
+dyn = test_suite(17);
+mask = dyn.full_mask(true);
+
+% initial controls
+x = dyn.seq.get(mask);
 
 % error function and its gradient at x
-[L, J] = error_NR(control_mask);
+[L, J] = dyn.error_NR(mask);
 
 % random direction in parameter space
-direction = randn(size(x));
+temp = randn(size(x));
+direction = temp / norm(temp);
 
 err = [];
-s = logspace(0, -5, 10);
+s = logspace(0, -6, 10);
 for k=1:length(s)
     delta = s(k) * direction;
 
@@ -24,12 +28,14 @@ for k=1:length(s)
     predicted = L + J * delta;
     
     % error func at x+delta
-    control_update(x + delta, control_mask);
-    accurate = error_NR();
+    dyn.update_controls(x + delta, mask);
+    accurate = dyn.error_NR();
     
     err(k) = norm(predicted - accurate);
 end
 
 figure();
-loglog(s, err); % error should be O(s^2)
-err
+loglog(s, err, 'b-o'); % error should be O(s^2)
+xlabel('|\Delta c|')
+ylabel('|error|')
+end
