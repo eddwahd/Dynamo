@@ -248,9 +248,9 @@ classdef control
             % things that don't change and aren't deleted by cla
             colormap(jet)
             set(ax, 'CLim', [0 nc])
-            title(ax, 'Control sequence')
-            xlabel(ax, 'Time')
-            ylabel(ax, 'Control amplitude')
+            title(ax, 'Control Sequence')
+            xlabel(ax, 'time')
+            ylabel(ax, 'control amplitude')
             grid(ax, 'on')
         end
         

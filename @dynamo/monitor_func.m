@@ -23,7 +23,10 @@ else
         % MATLAB not steal window focus when it plots something.
         set(0, 'CurrentFigure', h);
         ax = get(h, 'CurrentAxes');
+        set(ax, 'FontSize', 16);
         self.seq.plot(ax, true);
+        text(0.05, 0.9, sprintf('Error: %6.6g', optimValues.fval), 'Units','normalized',...
+             'FontSize',18, 'BackgroundColor',[.8 .8 1])
         drawnow();
     end
 end

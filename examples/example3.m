@@ -4,7 +4,7 @@
 % and Hamiltonian controls.
 
 
-%randseed(78318);
+randseed(78318);
 
 
 SX = [0 1; 1 0];
@@ -110,15 +110,15 @@ dyn.config.description =...
   sprintf('%d-qubit chain, transfer rate = %g, split = %g, v = %g', n_sites,transfer_rate,omega(2),v);
 
 % try the expensive-but-reliable gradient method
-epsilon = 1e-3;
-dyn.config.gradient_func = @(s, m) gradient_finite_diff(s, m, epsilon);
+%epsilon = 1e-3;
+%dyn.config.gradient_func = @(s, m) gradient_finite_diff(s, m, epsilon);
 
 
 %% set up controls
 T = 10;
-dyn.seq_init(1, T * [0.5, 1.0], control_type, control_par);
+dyn.seq_init(151, T * [0.5, 1.0], control_type, control_par);
 %dyn.easy_control(0.1 * ones(1,n_sites));
-dyn.easy_control([]);
+dyn.easy_control(0.1*[-1 1 -1]);
 
 
 %% now do the actual search

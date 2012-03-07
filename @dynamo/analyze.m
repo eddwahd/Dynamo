@@ -26,9 +26,9 @@ self.seq.plot()
 subplot(2, 1, 2)
 [ax, h1, h2] = plotyy(self.stats.wall_time, abs(self.stats.error), ...
                       self.stats.wall_time, self.stats.integral, 'semilogy', 'plot');
-xlabel('Wall time (s)')
-set(get(ax(1),'Ylabel'),'String','Normalized error') 
-set(get(ax(2),'Ylabel'),'String','Control integral') 
+xlabel('wall time (s)')
+set(get(ax(1),'Ylabel'),'String','normalized error') 
+set(get(ax(2),'Ylabel'),'String','control integral') 
 grid on
 set(h2,'LineStyle','--')
 end
