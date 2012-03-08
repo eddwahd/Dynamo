@@ -38,59 +38,60 @@ if 1 <= p && p <= 12
       q = 5;
       final = qft(q);
   end    
-  fprintf('Ising chain, %d qubits, XY control.\n', q)
+  desc = sprintf('Ising chain, %d qubits, XY control.', q);
   dim = 2 * ones(1, q);
   H = heisenberg_chain(dim, 2*[0 0 1]);
-  C = control_ops(dim, 'xy');
+  [C, cl] = control_ops(dim, 'xy');
 
 else
   switch p
   case {13, 14}
     dim = [2 2 2 2];
-    fprintf('Completely ZZ-coupled graph, 4 qubits, XY control.\n')
+    desc = sprintf('Completely ZZ-coupled graph, 4 qubits, XY control.');
     J = 2 * [0 0 1]; % Ising coupling
     C4 = diag(ones(1, 3), 1) +diag(1, 3); % C_4 connection graph
     C_full = C4 + diag(ones(1, 2), 2); % full connection graph
 
     H_C4 = heisenberg(dim, @(s,a,b) J(s)*C4(a,b));
     H    = heisenberg(dim, @(s,a,b) J(s)*C_full(a,b));
-    C = control_ops(dim, 'xy');
+    [C, cl] = control_ops(dim, 'xy');
     final = expm(-1j * pi/2 * H_C4); % target: C_4 cluster state
     
   case {15, 16}
     % NV centers in diamond
     error('Not implemented yet.')
     dim = [2 2];
-    fprintf('NV centers in diamond.\n')
+    desc = sprintf('NV centers in diamond.');
     E = 2*pi * [-134.825, -4.725, 4.275, 135.275]; % MHz
     mu = [1, 1/3.5, 1/1.4, 1/1.8];
 
     H = diag(E) +2*pi * 135 * diag([1, 0, 0, -1]);
-    % TODO C = ;
+    % TODO C = ; cl = {};
     final = CNOT;
 
   case {17, 18}
     q = 5;
     dim = 2 * ones(1, q);
-    fprintf('Ising chain with Stark shift, %d qubits, uniform XY control.\n', q)
+    desc = sprintf('Ising chain with Stark shift, %d qubits, uniform XY control.', q);
     H = heisenberg_chain(dim, 2*[0 0 1]) + op_sum(dim, @(k) -SZ*(2+k));
     C = {op_sum(dim, 0.5*SX), op_sum(dim, 0.5*SY)};
+    cl = {'\sum_i X_i', '\sum_i Y_i'};
     final = qft(q);
     
   case 19
     q = 5;
     dim = 2 * ones(1, q);
-    fprintf('Heisenberg chain with bias, %d qubits, Z control.\n', q)
+    desc = sprintf('Heisenberg chain with bias, %d qubits, Z control.', q);
     H = heisenberg_chain(dim, 2*[1 1 1]) + op_sum(dim, -10*SX);
-    C = control_ops(dim, 'z');
+    [C, cl] = control_ops(dim, 'z');
     final = qft(q);
     
   case {20, 21}
     q = 3 +p -20;
     dim = 2 * ones(1, q);
-    fprintf('Heisenberg chain, %d qubits, XY control at one end.\n', q)
+    desc = sprintf('Heisenberg chain, %d qubits, XY control at one end.', q);
     H = heisenberg_chain(dim, 2*[1 1 1]);
-    C = control_ops(dim, 'xy', q - 2);
+    [C, cl] = control_ops(dim, 'xy', q - 2);
     final = rand_U(prod(dim));
 
   case {22, 23}
@@ -99,21 +100,22 @@ else
     else
         d = 7;
     end
-    fprintf('A single spin-%g, J_z, J_x control.\n', (d-1)/2)
+    desc = sprintf('A single spin-%g, J_z, J_x control.', (d-1)/2);
     J = angular_momentum(d);
     H = J{3}^2;
     C = {J{3}, J{1}};
+    cl = {'J_z', 'J_x'};
     final = rand_U(d);
     
   otherwise
     error('Unknown problem.');
 end
 end
-fprintf('\n')
+fprintf('%s\n\n', desc)
 initial = eye(size(final));
 
 dyn = dynamo('S gate', initial, final, H, C);
-
+dyn.system.set_labels(desc, {}, cl);
 
 
 %% Initial control sequence

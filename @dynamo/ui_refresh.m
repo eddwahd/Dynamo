@@ -10,13 +10,16 @@ function ui_refresh(self, full)
     % It's incredible how much work it takes just to make
     % MATLAB not steal window focus when it plots something.
     set(0, 'CurrentFigure', h);
-    %ax = get(h, 'CurrentAxes');
-    %self.seq.plot(ax, true);
 
-    ax = subplot(2, 1, 1);
-    self.plot_seq(ax, full);
+    if 0
+        ax = subplot(2, 1, 1);
+        self.plot_seq(ax, full);
 
-    ax = subplot(2, 1, 2);
-    self.plot_X(ax);
-    %self.plot_stats(ax);
+        ax = subplot(2, 1, 2);
+        self.plot_X(ax, full);
+        %self.plot_stats(ax);
+    else
+        ax = get(h, 'CurrentAxes');
+        self.plot_seq(ax, full);
+    end
 end

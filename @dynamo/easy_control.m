@@ -46,5 +46,5 @@ else
     raw = randn(f_shape);
 end
 
-self.seq = self.seq.set([raw, tau_c]);
+self.seq.set([raw, tau_c]);
 end

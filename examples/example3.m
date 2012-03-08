@@ -42,6 +42,12 @@ Gamma = 1 * 1e-2 * ones(1, n_sites)
 transfer_rate = 0.2 %1/5;
 
 
+desc = sprintf('%d-qubit exciton transport chain with XY interaction, Z controls, relaxation.', n_sites);
+% 'transfer rate = %g, split = %g, v = %g', n_sites,transfer_rate,omega(2),v);
+fprintf('%s\n\n', desc);
+
+
+
 %% subspace restriction
 
 % The Hamiltonian preserves exciton number, whereas the noise
@@ -52,7 +58,7 @@ ddd = n_sites + 2; % zero- and single-exciton subspaces (sink included)
 p = [1, 1+2.^(n_sites:-1:0)]; % states to keep: zero, single exciton at each site/sink
 q = setdiff(1:prod(dim), p); % states to throw away
 
-labels = {'loss', '1', '2*', '3', 'sink'};
+st_labels = {'loss', 'site 1', 'site 2*', 'site 3', 'sink'};
 
 
 %% Lindblad ops
@@ -97,6 +103,7 @@ end
 control_type = char('m' + zeros(1, length(H_ctrl)));
 pp = [-4, 8];
 control_par = {pp, pp, pp};
+c_labels = {'Z_1', 'Z_2', 'Z_3'};
 
 
 %% initial and final states
@@ -105,9 +112,8 @@ control_par = {pp, pp, pp};
 initial = state(prod(dim(2:end)), dim); initial = initial.data; % '10..0'
 final   = state(1, dim); final = final.data; % '0..01'
 
-dyn = dynamo('SB state overlap', initial(p), final(p), H_drift, H_ctrl, L_drift, labels);
-dyn.config.description =...
-  sprintf('%d-qubit chain, transfer rate = %g, split = %g, v = %g', n_sites,transfer_rate,omega(2),v);
+dyn = dynamo('SB state overlap', initial(p), final(p), H_drift, H_ctrl, L_drift);
+dyn.system.set_labels(desc, st_labels, c_labels);
 
 % try the expensive-but-reliable gradient method
 %epsilon = 1e-3;

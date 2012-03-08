@@ -42,11 +42,14 @@ classdef dynamo < matlab.mixin.Copyable
   methods (Access = protected)
     function cp = copyElement(self)
     % Override the default copyElement method to provide deep copies.
-
+    % This is necessary since some of the data members are Copyable handle classes themselves.
+        
         % Make a shallow copy of everything
         cp = copyElement@matlab.mixin.Copyable(self);
         % Make a deep copy of all handle-type properties
-        cp.cache = copy(self.cache);
+        cp.system = copy(self.system);
+        cp.seq    = copy(self.seq);
+        cp.cache  = copy(self.cache);
     end
   end
   
@@ -67,7 +70,6 @@ classdef dynamo < matlab.mixin.Copyable
         config.date = datestr(now(), 31);
         config.task = task;
         config.L_is_propagator = false;
-        config.description = [];
         
         [system_str, rem] = strtok(task);
         [task_str, rem] = strtok(rem);
@@ -98,8 +100,8 @@ classdef dynamo < matlab.mixin.Copyable
               case 'state'
                 out = strcat(out, ' mixed state transfer');
                 % TODO more efficient Hilbert space implementation?
-                sys = sys.vec_representation(initial, final);
-                sys = sys.liouville(H_drift, 0, H_ctrl);
+                sys.vec_representation(initial, final);
+                sys.liouville(H_drift, 0, H_ctrl);
                 % g is always real, positive in this case so error_abs would work just as well
                 config.error_func = @error_real;
         
@@ -116,8 +118,8 @@ classdef dynamo < matlab.mixin.Copyable
                     end
                 end
 
-                sys = sys.std_representation(initial, final);
-                sys = sys.hilbert(H_drift, H_ctrl);
+                sys.std_representation(initial, final);
+                sys.hilbert(H_drift, H_ctrl);
         
                 if strcmp(extra_str, 'phase')
                     out = strcat(out, ' (with global phase (NOTE: unphysical!))');
@@ -144,19 +146,19 @@ classdef dynamo < matlab.mixin.Copyable
             switch task_str
               case 'state'
                 out = strcat(out, ' quantum state transfer');
-                sys = sys.vec_representation(initial, final);
+                sys.vec_representation(initial, final);
 
               case 'gate'
                 out = strcat(out, ' quantum map');
                 if any(input_dim == 1)
                     error('Initial and final states should be operators.')
                 end
-                sys = sys.vec_gate_representation(initial, final);
+                sys.vec_gate_representation(initial, final);
         
               otherwise
                 error('Unknown task.')
             end
-            sys = sys.liouville(H_drift, L_drift, H_ctrl);
+            sys.liouville(H_drift, L_drift, H_ctrl);
 
             % The generator isn't usually normal, so we cannot use the exact gradient method
             self.opt.max_violation = 0; % track the worst violation
@@ -223,7 +225,7 @@ classdef dynamo < matlab.mixin.Copyable
     % The varargin are the control_type and control_par cell vectors.
 
         n_controls = length(self.system.B);
-        self.seq = control(n_timeslots, n_controls, tau_par, varargin{:});
+        self.seq = control_seq(n_timeslots, n_controls, tau_par, varargin{:});
         if any(self.seq.control_type(~self.system.B_is_Hamiltonian) == '.')
             disp('Warning: Liouvillian control ops with possibly negative control values.')
         end
@@ -281,7 +283,7 @@ classdef dynamo < matlab.mixin.Copyable
 
         if any(changed_t_mask)
             % actually update the controls
-            self.seq = self.seq.set(new);
+            self.seq.set(new);
             self.cache.mark_as_stale(changed_t_mask);
         end
     end
@@ -378,7 +380,7 @@ classdef dynamo < matlab.mixin.Copyable
     end
 
 
-    function plot_X(self, ax, dt)
+    function plot_X(self, ax, full, dt)
     % Plots the evolution of the initial system as a function of time.
     % TODO for now it only handles state ops in vec representation.
 
@@ -388,6 +390,21 @@ classdef dynamo < matlab.mixin.Copyable
             ax = gca();
         end
         if nargin < 3
+            full = true;
+        end
+
+        if full
+            % things that don't change and aren't deleted by cla
+            set_plotstyle(ax);
+            title(ax, self.system.description);
+            xlabel(ax, 'time');
+            ylabel(ax, 'population');
+            grid(ax, 'on')
+        else
+            cla(ax);
+        end
+        
+        if nargin < 4
             % one plot point per timeslot
             %out_func = @(x) x; % no output function given, use a NOP
             for k = 0:n
@@ -417,13 +434,8 @@ classdef dynamo < matlab.mixin.Copyable
                 X = X_end; % stability...
             end
         end
-        set_plotstyle(ax);
         plot(ax, t, res);
         axis(ax, [0, t(end), 0, 1]);
-        title(ax, self.config.description);
-        xlabel(ax, 'time');
-        ylabel(ax, 'population');
-        grid(ax, 'on')
         legend(self.system.state_labels);
 
 

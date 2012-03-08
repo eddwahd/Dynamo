@@ -7,16 +7,19 @@ randseed(2783);
 q = 3;
 dim = 2 * ones(1, q);
 
-fprintf('Heisenberg chain, %d qubits, XY control at one end.\n', q)
+desc = sprintf('Heisenberg chain, %d qubits, XY control at one end.', q);
+fprintf('%s\n\n', desc);
+
 J = 2 * [1 1 1]; % Heisenberg interaction
 C = diag(ones(1, q-1), 1); % topology: linear chain
 H = heisenberg(dim, @(s,a,b) J(s)*C(a,b));
-C = control_ops(dim, 'xy', 1);
+[C, cl] = control_ops(dim, 'xy', 1);
 
 final = qft(q);
 initial = eye(size(final));
 
 dyn = dynamo('S gate', initial, final, H, C);
+dyn.system.set_labels(desc, {}, cl);
 dyn.seq_init(100, 12 * [1, 0]);
 dyn.easy_control(0.1 * ones(1,2));
 

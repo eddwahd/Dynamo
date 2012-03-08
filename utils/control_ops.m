@@ -1,6 +1,6 @@
-function [C, control_type] = control_ops(dim, ctrl, s)
+function [C, labels] = control_ops(dim, ctrl, s)
 % Returns a cell vector of control Hamiltonians (angular momentum ops).
-%  C = control(dim, ctrl [, s])
+%  [C, labels] = control_ops(dim, ctrl [, s])
 %
 %  dim is the system dimension vector.
 %  ctrl is a string consisting of chars 'x', 'y' and 'z', denoting
@@ -10,23 +10,22 @@ function [C, control_type] = control_ops(dim, ctrl, s)
 % Ville Bergholm 2011-2012
 
 
-n = length(dim);
 if nargin < 3
-    s = n;
+    s = length(dim);
 end
   
 ctrl = unique(lower(ctrl));
-c = length(ctrl);
-C = cell(s, c);
+n = length(ctrl);
+C = cell(s, n);
+labels = {};
 for k=1:s
     J = angular_momentum(dim(k));
-    for j=1:c
+    for j=1:n
         temp = ctrl(j) - 'x' + 1; % MATLAB indexing
         C{k,j} = mkron(speye(prod(dim(1:k-1))), J{temp}, speye(prod(dim(k+1:end))));
+        labels{k, j} = sprintf('%c_%d', upper(ctrl(j)), k);
     end
 end
 C = C(:);
-
-if nargout == 2
-  control_type = char('.' + zeros(size(C)));
+labels = labels(:);
 end

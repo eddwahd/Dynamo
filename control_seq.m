@@ -1,5 +1,5 @@
-classdef control
-% Class for control sequences.
+classdef control_seq < matlab.mixin.Copyable
+% Copyable handle class for control sequences.
 
 % Ville Bergholm 2011-2012
 
@@ -16,7 +16,7 @@ classdef control
   end
 
   methods
-    function self = control(n_timeslots, n_controls, tau_par, control_type, control_par)
+    function self = control_seq(n_timeslots, n_controls, tau_par, control_type, control_par)
     %  tau_par: [T_min, T_delta], either a single entry with the totals or one such entry for each time slot.
 
         %% Check control types
@@ -75,7 +75,7 @@ classdef control
     end
 
     
-    function self = set(self, raw)
+    function set(self, raw)
     % Transform and set the controls using a diagonal transformation function.
     %
     % raw: raw, untransformed control values, size(raw) == [n_timeslots, n_controls + 1].
@@ -158,7 +158,7 @@ classdef control
     end
     
     
-    function self = split(self, bins, n)
+    function split(self, bins, n)
     % Refines the sequence by splitting the given bins into n equal pieces.
     % If an empty vector of bin numbers is given, the entire sequence is refined.
 
@@ -196,7 +196,7 @@ classdef control
 
         % transform the new controls
         self.tau_par = tau_par;
-        self = set(self, raw);
+        self.set(raw);
     end
     
 
@@ -277,7 +277,7 @@ classdef control
             end
         end
         hold(ax, 'off')
-        legend(ax, p_colors, labels); % cla deletes this
+        legend(ax, p_colors, labels); % cla deletes this, so it needs to be redrawn
 
         %stairs(t, c)
         %c = [c; zeros(1,nc)]; % final time step is a dummy
