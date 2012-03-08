@@ -51,7 +51,7 @@ classdef dynamo < matlab.mixin.Copyable
   end
   
   methods
-    function self = dynamo(task, initial, final, H_drift, H_ctrl, L_drift, labels)
+    function self = dynamo(task, initial, final, H_drift, H_ctrl, L_drift)
     % Constructor
 
         if nargin < 6
@@ -196,11 +196,6 @@ classdef dynamo < matlab.mixin.Copyable
         % Calculate the squared norm |X_final|^2 to scale the fidelities with.
         % We use the Hilbert-Schmidt inner product (and the induced Frobenius norm) throughout the code.
         sys.norm2 = norm2(sys.X_final);
-
-        if nargin == 7
-            sys = sys.set_labels(labels);
-        end
-
         
         % store the prepared fields
         self.config = config;
@@ -358,13 +353,41 @@ classdef dynamo < matlab.mixin.Copyable
     end
 
 
-    function plot_X(self, dt)
+    function plot_seq(self, varargin)
+    % Plots the control sequence. Wrapper.
+
+        self.seq.plot(self.system.control_labels, varargin{:});
+    end
+
+
+    function plot_stats(self, ax0)
+    % Plots optimization stats.
+        
+        [ax, h1, h2] = plotyy(ax0, self.stats.wall_time, abs(self.stats.error), ...
+                              self.stats.wall_time, self.stats.integral, 'semilogy', 'plot');
+        % For some strange reason only the first set of axes inherits the
+        % parent axes' properties, so we need to set the plotstyle separately for both.
+        set_plotstyle(ax(1));
+        set_plotstyle(ax(2));
+        title('Optimization Statistics')
+        xlabel('wall time (s)')
+        ylabel(ax(1), 'normalized error')
+        ylabel(ax(2), 'control integral')
+        grid on
+        set(h2, 'LineStyle','--')
+    end
+
+
+    function plot_X(self, ax, dt)
     % Plots the evolution of the initial system as a function of time.
     % TODO for now it only handles state ops in vec representation.
 
-        n = self.seq.n_timeslots()
+        n = self.seq.n_timeslots();
         
-        if (nargin < 2)
+        if nargin < 2
+            ax = gca();
+        end
+        if nargin < 3
             % one plot point per timeslot
             %out_func = @(x) x; % no output function given, use a NOP
             for k = 0:n
@@ -394,16 +417,14 @@ classdef dynamo < matlab.mixin.Copyable
                 X = X_end; % stability...
             end
         end
-        plot(t , res);
-        axis([0, t(end), 0, 1]);
-        title(self.config.description);
-        xlabel('Time');
-        ylabel('Population');
-        if isempty(self.system.labels)
-            legend(char('0' + (1:size(q, 2))'));
-        else
-            legend(self.system.labels);
-        end
+        set_plotstyle(ax);
+        plot(ax, t, res);
+        axis(ax, [0, t(end), 0, 1]);
+        title(ax, self.config.description);
+        xlabel(ax, 'time');
+        ylabel(ax, 'population');
+        grid(ax, 'on')
+        legend(self.system.state_labels);
 
 
         function pop = state_pops(x)

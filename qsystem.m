@@ -5,7 +5,6 @@ classdef qsystem
     
   properties
     liouvillian      % Are the objects below in Liouville space or Hilbert space?
-    labels = {}      % Hilbert space state labels
     A                % drift generator
     B                % cell vector of control generators
     B_is_Hamiltonian % true if corresponding B item is a Hamiltonian
@@ -13,6 +12,8 @@ classdef qsystem
     X_initial        % initial state
     X_final          % final state
     norm2            % squared norm of final state
+    state_labels   = {} % names for the Hilbert space computational basis states
+    control_labels = {} % names for the controls
   end
     
   methods
@@ -116,13 +117,29 @@ classdef qsystem
     end
 
 
-    function self = set_labels(self, labels)
-    % Label the states. labels is a cell vector of strings.
+    function self = set_labels(self, st_labels, c_labels)
+    % Label the states and controls. The labels are cell vectors of strings.
 
-        if length(labels) ~= self.dimension()
-            error('Number of labels given does not match the Hilbert space dimension.')
+        dim = self.dimension();
+        n_controls = length(self.B);
+        
+        if isempty(st_labels)
+            st_labels = char('0' + (1:dim).');
         end
-        self.labels = labels;
+
+        if nargin < 3 || isempty(c_labels)
+            c_labels = char('0' + (1:n_controls).');
+        end
+        
+        if length(st_labels) ~= dim
+            error('Number of state labels given does not match the Hilbert space dimension.')
+        end
+        self.state_labels = st_labels;
+        
+        if length(c_labels) ~= n_controls
+            error('Number of control labels given does not match the number of controls.')
+        end
+        self.control_labels = c_labels;
     end
   end
 end

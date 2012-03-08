@@ -22,11 +22,12 @@ grad = zeros(nnz(control_mask), 1);
 for z = 1:length(Ts)
     t = Ts(z);
     c = Cs(z);
-    
-    temp = abs(self.seq.tau(t)) * norm(self.cache.H{t});
-    if temp > 1
-        self.gradient_warn(t, c, temp);
-    end
+
+    % TODO: this test is _really_ expensive, around 20% of total running time.
+    %temp = abs(self.seq.tau(t)) * norm(self.cache.H{t});
+    %if temp > 1
+    %    self.gradient_warn(t, c, temp);
+    %end
 
     if c == tau_c
         temp = -self.seq.tau_deriv(t) * trace_matmul(self.cache.L{t+1}, self.cache.H{t} * self.cache.U{t+1});

@@ -20,10 +20,8 @@ self.opt.term_cond = struct( ...
     'max_cputime',         1e4, ...
     'min_gradient_norm', 1e-20);
 
-
-% UI figure
-self.opt.UI_fig = figure('Name', 'Dynamo: Optimizing...', 'CloseRequestFcn', {@close_req, self});
-self.seq.plot(axes()); % plot the initial sequence
+% communication between the UI figure and monitor_func
+self.opt.stop = false;
 
 % should we plot intermediate results?
 if isfield(options, 'plot_interval')
@@ -36,16 +34,9 @@ self.opt.wall_start = now();
 self.opt.cpu_start = cputime();
 
 
-self.stats.error = [];
-self.stats.wall_time = [];
-self.stats.cpu_time  = [];
-self.stats.integral  = [];
-self.stats.fluence   = [];
-end
-
-
-function close_req(src, event, self)
-% Callback for closing the UI figure window.
-    delete(src); % close the figure
-    self.opt.UI_fig = []; % signal monitor_func that we should stop
+self.stats.error = self.config.error_func(self);
+self.stats.wall_time = 0;
+self.stats.cpu_time  = 0;
+self.stats.integral  = self.seq.integral();
+%self.stats.fluence   = [];
 end

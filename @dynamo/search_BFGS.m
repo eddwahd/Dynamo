@@ -9,6 +9,9 @@ end
 % initialize the optimization data structures
 self.init_opt(control_mask, user_options);
 
+% FIXME
+self.ui_open();
+
 
 % default options
 problem.options = optimset(...

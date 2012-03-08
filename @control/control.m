@@ -229,29 +229,30 @@ classdef control
     
 
 
-    function plot(self, ax, update)
+    function plot(self, labels, ax, full)
     % Plots a control sequence using superposed bars.
 
-        if nargin < 2
+        if nargin < 3
             % If no axes are given, use the current ones.
             ax = gca();
         end
-        if nargin < 3
-            update = false;
+        if nargin < 4
+            full = true;
         end
         
         nc = self.n_controls();
         
-        if update
-            cla(ax);
-        else
+        if full
             % things that don't change and aren't deleted by cla
+            set_plotstyle(ax);
             colormap(jet)
             set(ax, 'CLim', [0 nc])
             title(ax, 'Control Sequence')
             xlabel(ax, 'time')
             ylabel(ax, 'control amplitude')
             grid(ax, 'on')
+        else
+            cla(ax);
         end
         
         % start times for pulses
@@ -276,7 +277,7 @@ classdef control
             end
         end
         hold(ax, 'off')
-        legend(ax, p_colors, char('0' + (1:nc)')); % cla deletes this
+        legend(ax, p_colors, labels); % cla deletes this
 
         %stairs(t, c)
         %c = [c; zeros(1,nc)]; % final time step is a dummy

@@ -11,24 +11,17 @@ fprintf('Final sequence duration: %g\n', sum(self.seq.tau));
 
 
 % rough error estimates
-d = real(eig(self.system.A));
-n = length(d);
-T = sum(self.seq.tau);
-e_max = 1-exp(-T*sum(d)/n)
-e_min = 1-sum(exp(-T*d))/n
-
+%d = real(eig(self.system.A));
+%n = length(d);
+%T = sum(self.seq.tau);
+%e_max = 1-exp(-T*sum(d)/n)
+%e_min = 1-sum(exp(-T*d))/n
 
 % plot the final sequence and some analytics
 figure()
-subplot(2, 1, 1)
-self.seq.plot()
+ax = subplot(2, 1, 1);
+self.plot_seq(ax);
 
-subplot(2, 1, 2)
-[ax, h1, h2] = plotyy(self.stats.wall_time, abs(self.stats.error), ...
-                      self.stats.wall_time, self.stats.integral, 'semilogy', 'plot');
-xlabel('wall time (s)')
-set(get(ax(1),'Ylabel'),'String','normalized error') 
-set(get(ax(2),'Ylabel'),'String','control integral') 
-grid on
-set(h2,'LineStyle','--')
+ax = subplot(2, 1, 2);
+self.plot_stats(ax);
 end
