@@ -12,15 +12,15 @@ classdef dynamo < matlab.mixin.Copyable
 
 
   properties
-    config
-    system
-    seq
-    opt
-    stats
+    config   % configuration information, other metadata
+    system   % description of the physical system
+    seq      % control sequence
+    opt      % optimization options
+    stats    % optimization statistics
   end
 
   properties (Transient)
-    cache % Do not save the cache on disk since it may be huge and can be recomputed.
+    cache % Do not save the cache on disk since it may be huge and can always be recomputed.
   end
 
   methods (Static)
@@ -202,6 +202,8 @@ classdef dynamo < matlab.mixin.Copyable
         % store the prepared fields
         self.config = config;
         self.system = sys;
+        
+        self.opt.ui_fig = [];
     end
 
 

@@ -9,11 +9,7 @@ end
 % initialize the optimization data structures
 self.init_opt(control_mask, user_options);
 
-% FIXME
-self.ui_open();
-
-
-% default options
+% default options for fminunc
 problem.options = optimset(...
     'MaxIter',      1e4,...
     'TolX',         1e-8,...

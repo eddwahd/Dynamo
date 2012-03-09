@@ -23,5 +23,8 @@ dyn.system.set_labels(desc, {}, cl);
 dyn.seq_init(100, 12 * [1, 0]);
 dyn.easy_control(0.1 * ones(1,2));
 
+dyn.ui_open();
+pause(3);
+
 dyn.search_BFGS(dyn.full_mask(), struct('Display', 'final', 'plot_interval', 1));
 dyn.analyze();

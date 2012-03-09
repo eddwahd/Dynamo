@@ -1,6 +1,8 @@
 function init_opt(self, control_mask, options)
-% Initialize the optimization module.
-% FIXME interplay with the search_* functions and their options, monitor_func.
+% Initialize the optimization options and statistics.
+
+
+%% options
 
 self.opt.initial_controls = self.seq.get();
 self.opt.control_mask = control_mask;
@@ -33,6 +35,8 @@ end
 self.opt.wall_start = now();
 self.opt.cpu_start = cputime();
 
+
+%% statistics
 
 self.stats.error = self.config.error_func(self);
 self.stats.wall_time = 0;

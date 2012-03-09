@@ -1,4 +1,4 @@
-function ui_refresh(self, full)
+function ui_refresh(self, full, err)
 % Refreshes the UI figure, plots stuff.
     
     % Do a full refresh or just redraw the graphical objects?
@@ -6,7 +6,7 @@ function ui_refresh(self, full)
         full = true;
     end
     
-    h = self.opt.UI_fig;
+    h = self.opt.ui_fig;
     % It's incredible how much work it takes just to make
     % MATLAB not steal window focus when it plots something.
     set(0, 'CurrentFigure', h);
@@ -22,4 +22,11 @@ function ui_refresh(self, full)
         ax = get(h, 'CurrentAxes');
         self.plot_seq(ax, full);
     end
+
+    if nargin == 3
+        text(0.05, 0.9, sprintf('Error: %6.6g', err), 'Units','normalized',...
+             'FontSize',18, 'BackgroundColor',[.8 .8 1])
+    end
+
+    drawnow();
 end

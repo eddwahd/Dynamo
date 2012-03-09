@@ -129,6 +129,8 @@ dyn.easy_control(0.1*[-1 1 -1]);
 
 %% now do the actual search
 
+dyn.ui_open();
+pause(3);
+
 dyn.search_BFGS(dyn.full_mask(), struct('Display', 'final', 'plot_interval', 1));
 dyn.analyze();
-

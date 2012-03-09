@@ -19,11 +19,8 @@ end
 %% Plot the sequence every now and then
 
 % Refresh the UI figure.
-if ~isempty(self.opt.UI_fig) && self.opt.plot_interval && mod(self.opt.N_iter, self.opt.plot_interval) == 0
-    self.ui_refresh(false);
-    text(0.05, 0.9, sprintf('Error: %6.6g', optimValues.fval), 'Units','normalized',...
-         'FontSize',18, 'BackgroundColor',[.8 .8 1])
-    drawnow();
+if ~isempty(self.opt.ui_fig) && self.opt.plot_interval && mod(self.opt.N_iter, self.opt.plot_interval) == 0
+    self.ui_refresh(false, optimValues.fval);
 end
 
 

@@ -260,7 +260,7 @@ classdef control_seq < matlab.mixin.Copyable
         c = self.fields;
 
         % set new axis limits
-        axis(ax, [0, t(end), min(c(:)), max(c(:))+1e-3]);
+        axis(ax, [0, t(end), min(min(c(:)), 0), max(max(c(:))+1e-3, 0)]);
         hold(ax, 'on');
         for j=1:length(t)-1
             x = [t(j), t(j+1), t(j+1), t(j)];
