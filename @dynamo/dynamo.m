@@ -402,13 +402,13 @@ classdef dynamo < matlab.mixin.Copyable
             xlabel(ax, 'time');
             ylabel(ax, 'population');
             grid(ax, 'on')
+            set(ax, 'NextPlot','replacechildren'); % so plot() won't reset these properties
         else
             cla(ax);
         end
         
         if nargin < 4
             % one plot point per timeslot
-            %out_func = @(x) x; % no output function given, use a NOP
             for k = 0:n
                 res(k+1, :) = state_pops(self.X(k));
             end
@@ -443,8 +443,8 @@ classdef dynamo < matlab.mixin.Copyable
 
         function pop = state_pops(x)
         % Returns the diagonal of a vectorized state operator.
-        % NOTE: due to the horrible scoping of MATLAB, we use small x
-        % here as not to shadow the capital X in the parent function.
+        % NOTE: due to the horrible scoping rules of MATLAB, we use small x
+        % here as not to nuke the capital X in the parent function.
             pop = real(diag(inv_vec(x)));
         end
     end
