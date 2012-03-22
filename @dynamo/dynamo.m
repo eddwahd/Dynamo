@@ -171,6 +171,7 @@ classdef dynamo < matlab.mixin.Copyable
                 config.f_max = 1;
             else
                 config.error_func = @error_open;
+                config.gradient_func = []; % automatic, but needs to exist
                 config.L_is_propagator = true; % L: full reverse propagator
             end
             out = strcat(out, ' in an open system under Markovian noise.\n');
@@ -316,7 +317,8 @@ classdef dynamo < matlab.mixin.Copyable
     function ret = g_func(self, use_trace)
     % Computes the auxiliary function g := trace(X_f^\dagger * X(t_n)).
     % Used both for the goal function as well as its gradient.
-
+    % FIXME use_trace==false is misleading and next to useless
+        
         if nargin < 2
             use_trace = true; % default: apply trace
         end
@@ -336,7 +338,7 @@ classdef dynamo < matlab.mixin.Copyable
             self.cache.g = ret;
         else
             ret = self.cache.L{k} * self.cache.U{k};
-            self.cache.g = trace(ret);
+            self.cache.g = trace(ret); % store the trace anyway
         end
         self.cache.g_is_stale = false;
     end
