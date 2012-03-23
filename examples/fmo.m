@@ -7,7 +7,7 @@ function dyn = fmo()
 % Ville Bergholm 2012
 
 
-%randseed(825);
+randseed(825);
 
 
     
@@ -109,12 +109,13 @@ H_drift = [215, -104.1,  5.1,  -4.3,   4.7, -15.1,  -7.8;
            0,        0,    0,     0,     0,   330,  32.7;
            0,        0,    0,     0,     0,     0,   280];
 H_drift = H_drift + triu(H_drift, 1)'
-
-% NOTE hybrid basis: rotate states 1 and 2
-%U = eye(7); U(1:2,1:2) = fliplr(hadamard(2)/sqrt(2));
-%H_drift = U'*H_drift*U;
 H_drift = blkdiag(0, H_drift, 0);
-
+% NOTE hybrid basis: rotate states 1 and 2
+hybrid = 0;
+if hybrid
+    U = eye(9); U(2:3,2:3) = fliplr(hadamard(2)/sqrt(2));
+    H_drift = U'*H_drift*U;
+end
 
 %% controls
 
@@ -125,7 +126,11 @@ if 1
 % dephasing controls
 for k = 1:n_sites
     temp = op_list({{sqrt(2) * n_op, k}}, dim);
-    H_ctrl{end+1} = superop_lindblad({temp(p,p)});
+    temp = temp(p,p);
+    if hybrid
+        temp = U' * temp * U;
+    end
+    H_ctrl{end+1} = superop_lindblad({temp});
 end
 % transformed controls?
 control_type = 'mmmmmmm';
@@ -155,28 +160,30 @@ end
 %% initial and final states
 
 % for pure state transfer
-initial = state('10000000'); initial = initial.data;
-final   = state('00000001'); final = final.data;
+initial = state('10000000'); initial = initial.data; initial = initial(p);
+final   = state('00000001'); final = final.data;     final = final(p);
 
 % NOTE hybrid basis
-% initial = U' * initial;
-dyn = dynamo('SB state overlap', initial(p), final(p), H_drift, H_ctrl, L_drift);
+if hybrid
+    initial = U' * initial;
+end
+dyn = dynamo('SB state overlap', initial, final, H_drift, H_ctrl, L_drift);
 dyn.system.set_labels(desc, st_labels, c_labels);
 
 
 % try the expensive-but-reliable gradient method
-%epsilon = 1e-3;
-%dyn.config.gradient_func = @(s, m) gradient_finite_diff(s, m, epsilon);
+epsilon = 1e-3;
+dyn.config.gradient_func = @(s, m) gradient_finite_diff(s, m, epsilon);
 
 
 %% set up controls
 
 T = 5;
-dyn.seq_init(109, T * [0.5, 1.0], control_type, control_par);
-%dyn.easy_control(1 * gamma_5);
-dyn.easy_control(0*gamma, 0, 10); % random
+dyn.seq_init(101, T * [0.5, 1.0], control_type, control_par);
+dyn.easy_control(1 * gamma_5_own);
+%dyn.easy_control(0*gamma, 0, 10); % random
 
-%return
+
 %% now do the actual search
 
 dyn.ui_open();

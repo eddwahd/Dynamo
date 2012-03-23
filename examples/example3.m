@@ -33,13 +33,13 @@ n_op = a' * a; % == (I-SZ) / 2; % number op
 % energy splittings
 omega = [1 4 1 0]
 % site-to-site coupling
-v = 0.5 % 0.6; % 0.1
+v = 0.8
 % dephasing
 gamma = zeros(1, n_sites)
 % relaxation
-Gamma = 1 * 1e-2 * ones(1, n_sites)
+Gamma = 1e-2 * ones(1, n_sites)
 % transfer rate from target_site to sink
-transfer_rate = 0.2 %1/5;
+transfer_rate = 6
 
 
 desc = sprintf('%d-qubit exciton transport chain with XY interaction, Z controls, relaxation.', n_sites);
@@ -124,13 +124,11 @@ dyn.system.set_labels(desc, st_labels, c_labels);
 T = 10;
 dyn.seq_init(151, T * [0.5, 1.0], control_type, control_par);
 %dyn.easy_control(0.1 * ones(1,n_sites));
-dyn.easy_control(0.1*[-1 1 -1]);
+dyn.easy_control(0.05*[1 2 3]);
 
 
 %% now do the actual search
 
 dyn.ui_open();
-pause(3);
-
 dyn.search_BFGS(dyn.full_mask(), struct('Display', 'final', 'plot_interval', 1));
-dyn.analyze();
+%dyn.analyze();

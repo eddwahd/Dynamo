@@ -30,16 +30,24 @@ n_op = a' * a; % == (I-SZ) / 2; % number op
 
 %% parameters
 
+% good pulsed vs const:  none/const/pulsed deph.:  0.07/0.10/0.13
+% om = [1 1.6 1 0], v = 0.1, G = 1e-2, tr = 0.2, T = 50
+
+% 9/29/32
+
+% good improvement: 0.15/0.38/0.41
+% om = [1 4 1 0], v = 0.8, G = 1e-2, tr = 6, T = 10
+
 % energy splittings
 omega = [1 4 1 0]
 % site-to-site coupling
-v = 1 % 0.6; % 0.1
+v = 0.8
 % dephasing
 gamma = zeros(1, n_sites)
 % relaxation
 Gamma = 1 * 1e-2 * ones(1, n_sites)
 % transfer rate from target_site to sink
-transfer_rate = 1 % 8; %1/5;
+transfer_rate = 6
 
 
 desc = sprintf('%d-qubit exciton transport chain with XY interaction, dephasing controls, relaxation.', n_sites);
@@ -121,6 +129,7 @@ dyn.system.set_labels(desc, st_labels, c_labels);
 
 %% set up controls
 T = 10;
+
 dyn.seq_init(151, T * [0.5, 1.0], control_type, control_par);
 dyn.easy_control(0.1 * ones(1,n_sites));
 
@@ -128,7 +137,5 @@ dyn.easy_control(0.1 * ones(1,n_sites));
 %% now do the actual search
 
 dyn.ui_open();
-pause(3);
-
 dyn.search_BFGS(dyn.full_mask(), struct('Display', 'final', 'plot_interval', 1));
-dyn.analyze();
+%dyn.analyze();
