@@ -21,6 +21,7 @@ function ui_refresh(self, full, err)
     else
         ax = get(h, 'CurrentAxes');
         self.plot_seq(ax, full);
+        title(ax, self.system.description);
     end
 
     if nargin == 3

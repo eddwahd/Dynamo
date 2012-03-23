@@ -1,7 +1,7 @@
 function ui_open(self)
 % Create the UI figure.
-    
-    self.opt.ui_fig = figure('Name', 'Dynamo: Optimizing...', 'CloseRequestFcn', {@close_req, self});
+
+    self.opt.ui_fig = figure('Name', 'Dynamo UI', 'CloseRequestFcn', {@close_req, self});
     ax = axes();
     self.ui_refresh(true); % initial draw
 end

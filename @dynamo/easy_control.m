@@ -47,4 +47,5 @@ else
 end
 
 self.seq.set([raw, tau_c]);
+self.cache.invalidate(); % flush the entire cache
 end

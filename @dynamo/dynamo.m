@@ -384,7 +384,7 @@ classdef dynamo < matlab.mixin.Copyable
 
     function plot_X(self, ax, full, dt)
     % Plots the evolution of the initial system as a function of time.
-    % TODO for now it only handles state ops in vec representation.
+    % TODO for now it only handles kets and state ops
 
         n = self.seq.n_timeslots();
         
@@ -400,24 +400,31 @@ classdef dynamo < matlab.mixin.Copyable
             set_plotstyle(ax);
             title(ax, self.system.description);
             xlabel(ax, 'time');
-            ylabel(ax, 'population');
+            ylabel(ax, 'probability');
             grid(ax, 'on')
             set(ax, 'NextPlot','replacechildren'); % so plot() won't reset these properties
         else
             cla(ax);
         end
+
+        % what should we plot?
+        if self.system.liouvillian
+            state_probs = @prob_stateop;
+        else
+            state_probs = @prob_ket;
+        end
         
         if nargin < 4
             % one plot point per timeslot
             for k = 0:n
-                res(k+1, :) = state_pops(self.X(k));
+                res(k+1, :) = state_probs(self.X(k));
             end
             t = [0; cumsum(self.seq.tau)];
         else
             % use the given dt for plotting
             t = [0];
             X = self.X(0);
-            res(1, :) = state_pops(X);
+            res(1, :) = state_probs(X);
 
             for k = 1:n
                 X_end = self.X(k); % make sure the cache is up-to-date
@@ -429,7 +436,7 @@ classdef dynamo < matlab.mixin.Copyable
                 P = expm(-step * G);
                 for q = 1:n_steps
                     X = P * X;
-                    res(end+1, :) = state_pops(X);
+                    res(end+1, :) = state_probs(X);
                 end
                 temp = t(end);
                 t = [t, linspace(temp+step, temp+tau, n_steps)];
@@ -441,11 +448,18 @@ classdef dynamo < matlab.mixin.Copyable
         legend(self.system.state_labels);
 
 
-        function pop = state_pops(x)
+        function p = prob_stateop(x)
         % Returns the diagonal of a vectorized state operator.
         % NOTE: due to the horrible scoping rules of MATLAB, we use small x
         % here as not to nuke the capital X in the parent function.
-            pop = real(diag(inv_vec(x)));
+            p = real(diag(inv_vec(x)));
+        end
+    
+        function p = prob_ket(x)
+        % Returns the absolute values squared of ket vector elements.
+        % NOTE: due to the horrible scoping rules of MATLAB, we use small x
+        % here as not to nuke the capital X in the parent function.
+            p = real(x .* conj(x));
         end
     end
   end
