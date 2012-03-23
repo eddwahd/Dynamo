@@ -11,7 +11,7 @@ if nargin == 2
     grad = (2 / self.system.norm2) * temp;
 end
 
-X_n = self.g_func(false);
+X_n = self.X();
 
 % fidelity
 f = real(inprod(self.system.X_final, X_n));
