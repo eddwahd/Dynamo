@@ -22,8 +22,8 @@ SP = (SX +1i*SY)/2;
 %% Define the physics of the problem
 
 % dimension vector for the quantum system
-n_sites = 3;
-dim = 2 * ones(1, n_sites); % n qubits
+n_qubits = 3;
+dim = 2 * ones(1, n_qubits);
 D = prod(dim);
 
 
@@ -37,13 +37,14 @@ depolarize2 = {kron(I, SX), kron(I, SY), kron(I, SZ)};
 
 % Drift Hamiltonian
 J = 4 * [0 0 1]; % Ising coupling
-C = diag(ones(1, n_sites - 1), 1); % linear chain
+C = diag(ones(1, n_qubits - 1), 1); % linear chain
 H_drift = heisenberg(dim, @(s, a, b) J(s) * C(a,b)) -op_sum(dim, @(k) (k+2)*SZ);
 
 
 % Control Hamiltonians / Liouvillians
-%[H_ctrl, control_type] = control(dim, 'xy', 2);
+%[H_ctrl, c_labels] = control_ops(dim, 'xy', 2);
 H_ctrl = {op_sum(dim, @(k) SX), op_sum(dim, @(k) SY)};
+c_labels = {'X', 'Y'};
 control_type = '..';
 
 % transformed controls?
@@ -66,7 +67,7 @@ final = qft(length(dim));
 
 dyn = dynamo('S gate', initial, final, H_drift, H_ctrl);
 %dyn = dynamo('SB gate', initial, final, H_drift, H_ctrl, L_drift);
-
+dyn.system.set_labels('Ising chain', '', c_labels);
 
 %% Initial controls
 
@@ -79,6 +80,7 @@ dyn.easy_control([0, 0], 0, 1, true);
 %% Now do the actual search
 
 fprintf('\nUsing GRAPE (BFGS 2nd order update scheme, updating all time slices concurrently).\n\n    Please wait, this may take a while... \n\n'); drawnow;
+dyn.ui_open();
 dyn.search_BFGS(dyn.full_mask(), struct('Display', 'final', 'plot_interval', 1));
 
 dyn.analyze();

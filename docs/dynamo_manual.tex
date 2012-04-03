@@ -12,6 +12,9 @@
 \newcommand{\ee}{\end{equation}}
 \newcommand{\eq}{\Leftrightarrow}
 
+\newcommand{\R}{{\mathbb R}}  % real numbers
+\newcommand{\C}{{\mathbb C}}  % complex numbers
+
 \newcommand{\ket}[1]{\left| #1 \right \rangle}
 \newcommand{\bra}[1]{\left \langle #1 \right|}
 \newcommand{\braket}[2]{\left \langle #1 | #2 \right \rangle}
@@ -94,14 +97,19 @@ We use the $\cvec$-representation of state
 operators, explained in Appendix~\ref{sec:vec},
 as the mapping between the Hilbert and Liouville spaces.
 
+\subsection{Piecewise-defined controls}
 
 % sum over control fields: c
 % sum over time slices: k
 Assume that the controls are
-piecewise constant in time: $u_{c, k}$, with $n$~time slices in total,
-and that the duration of the $k$th slice is~$\tau_k$, giving
+piecewise constant\footnote{Actually ``piecewise defined'' might be
+  enough, if the controls are not constant it's just the computation
+  of the propagators~$P_k$ for each slice that gets harder.}
+in time: $u_{c, k}$, with $n$~time slices in total,
+and that the duration of the $k$th slice is~$\tau_k$.
+The points in time where the controls may change in value are thus
 \be
-t_k = t_0 + \sum_{j=1}^{k} \tau_j.
+t_k = t_0 + \sum_{j=1}^{k} \tau_j, \quad k \in \{0, \ldots, n\}.
 \ee
 For each time slice we now obtain the propagator
 \be
@@ -113,6 +121,9 @@ X_k := X(t_k) = \prod_{j=1}^{k} P_j X(t_0).
 \ee
 The propagators, like the generators, always act on~$X$ by multiplication
 from the left.
+The relationship between the time slots and the related operators is
+illustrated in Table~\ref{table:slices}.
+
 
 Derivatives:
 \begin{align}
@@ -141,6 +152,7 @@ $U_{k+1} = P_k \cdots P_1 X_0 = X_k$ and
 $\Lambda_k = X_f^\dagger P_n \cdots P_k$ (MATLAB indexing limitations...).
 
 \begin{table}[h]
+\label{table:slices}
 \[
 \begin{array}{c}
 \begin{array}{@{t_0}p{1.9em}@{t_1}p{1.8em}@{t_2}p{1.4em}@{t_{k-1}}p{1.1em}@{t_{k}}p{1.1em}@{t_{k+1}}p{0.8em}@{t_{n-2}}p{0.8em}@{t_{n-1}}p{1.3em}@{t_n}}
@@ -189,7 +201,7 @@ d^2(A, B) = |A-B|^2
 %= |A|^2 +|B|^2 -2 \re \tr(A^\dagger B).
 = |A|^2 +|B|^2 -2 \re \inprod{A}{B}.
 \ee
-Dividing this expression with the target norm~$|A|^2$ (assumed fixed,
+Dividing this expression with the target norm squared~$|A|^2$ (assumed fixed,
 known), we obtain the normalized distance measure
 \be
 \label{eq:df}
@@ -199,10 +211,14 @@ D(A,B)
 \ee
 where
 \be
-f(A, B) := \frac{1}{|A|^2} \re \tr(A^\dagger B)
+f(A, B)
+:= \frac{1}{|A|^2} \re \inprod{A}{B}
+= \frac{1}{|A|^2} \re \tr(A^\dagger B)
 \ee
 is the normalized \emph{fidelity}\footnote{
 There is another widely used quantity called fidelity in quantum information science which is different from the present one.}.
+If $A$ and $B$ are Hermitian, the fidelity corresponds to an inner product.
+
 % NOTE fidelity is the real part of an inner product, one can use Cauchy-Schwarz inequality...
 Clearly $f(A, A) = 1$, and
 the triangle inequality $|A-B| \le |A|+|B|$ yields
@@ -301,7 +317,7 @@ $|X|^2$~is equivalent to the purity of the state:
 \be
 |X|^2
 = |\cvec(\rho)|^2
-= \tr(\rho^\dagger \rho)
+= |\rho|^2
 = \tr(\rho^2)
 = P(\rho).
 \ee
@@ -535,6 +551,8 @@ It induces the Frobenius norm:
 \be
 |X| := \sqrt{\inprod{X}{X}} = \sqrt{\tr\left(X^\dagger X\right)}.
 \ee
+
+If $X$ and $Y$ are Hermitian, $\inprod{X}{Y} \in \R$.
 
 \section{$\cvec$ mapping}
 \label{sec:vec}

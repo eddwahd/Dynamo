@@ -229,7 +229,7 @@ classdef control_seq < matlab.mixin.Copyable
     
 
 
-    function plot(self, labels, ax, full)
+    function ax = plot(self, labels, ax, full)
     % Plots a control sequence using superposed bars.
 
         if nargin < 3

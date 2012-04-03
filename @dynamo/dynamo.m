@@ -164,12 +164,15 @@ classdef dynamo < matlab.mixin.Copyable
             self.opt.max_violation = 0; % track the worst violation
 
             if strcmp(extra_str, 'overlap')
-                % TEST, simple overlap goal function
+                % overlap error function
+                % NOTE simpler gradient, but final state needs to be pure
+                % TODO gates?
                 out = strcat(out, ' (overlap)');
                 config.error_func = @error_real;
                 config.gradient_func = @gradient_first_order_aprox;
                 config.f_max = 1;
             else
+                % distance error function
                 config.error_func = @error_open;
                 config.gradient_func = []; % automatic, but needs to exist
                 config.L_is_propagator = true; % L: full reverse propagator
@@ -362,7 +365,8 @@ classdef dynamo < matlab.mixin.Copyable
     function plot_seq(self, varargin)
     % Plots the control sequence. Wrapper.
 
-        self.seq.plot(self.system.control_labels, varargin{:});
+        ax = self.seq.plot(self.system.control_labels, varargin{:});
+        title(ax, self.system.description);
     end
 
 
@@ -406,7 +410,7 @@ classdef dynamo < matlab.mixin.Copyable
             grid(ax, 'on')
             set(ax, 'NextPlot','replacechildren'); % so plot() won't reset these properties
         else
-            cla(ax);
+            %cla(ax);
         end
 
         % what should we plot?
