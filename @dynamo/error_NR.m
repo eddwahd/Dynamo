@@ -5,7 +5,8 @@ function [L, J] = error_NR(self, control_mask)
 % TODO instead of g, cache L? now there's no benefit in storing an
 % intermediate value or is there?
 
-X_n = self.g_func(false);
+% FIXME
+X_n = X_f' * self.X();
 L = logm(X_n);
   
 if nargin == 2

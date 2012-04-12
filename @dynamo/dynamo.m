@@ -138,7 +138,7 @@ classdef dynamo < matlab.mixin.Copyable
             config.f_max = sqrt(norm2(sys.X_initial) / norm2(sys.X_final));
 
             % the generator is always Hermitian and thus normal => use exact gradient
-            config.gradient_func = @gradient_exact;
+            config.gradient_func = @gradient_g_exact;
 
     
           case {'sb'}
@@ -165,16 +165,16 @@ classdef dynamo < matlab.mixin.Copyable
 
             if strcmp(extra_str, 'overlap')
                 % overlap error function
-                % NOTE simpler gradient, but final state needs to be pure
+                % NOTE simpler error function and gradient, but final state needs to be pure
                 % TODO gates?
                 out = strcat(out, ' (overlap)');
                 config.error_func = @error_real;
-                config.gradient_func = @gradient_first_order_aprox;
+                config.gradient_func = @gradient_g_1st_order;
                 config.f_max = 1;
             else
                 % distance error function
                 config.error_func = @error_open;
-                config.gradient_func = []; % automatic, but needs to exist
+                config.gradient_func = @gradient_open_1st_order;
                 config.L_is_propagator = true; % L: full reverse propagator
             end
             out = strcat(out, ' in an open system under Markovian noise.\n');
@@ -222,7 +222,7 @@ classdef dynamo < matlab.mixin.Copyable
             L_end = self.system.X_final'; % L: X_final' propagated backwards
         end
 
-        self.cache = cache(self.seq.n_timeslots(), self.system.X_initial, L_end, isequal(self.config.gradient_func, @gradient_exact));
+        self.cache = cache(self.seq.n_timeslots(), self.system.X_initial, L_end, isequal(self.config.gradient_func, @gradient_g_exact));
     end
 
 
@@ -317,16 +317,11 @@ classdef dynamo < matlab.mixin.Copyable
     end
 
 
-    function ret = g_func(self, use_trace)
+    function ret = g_func(self)
     % Computes the auxiliary function g := trace(X_f^\dagger * X(t_n)).
     % Used both for the goal function as well as its gradient.
-    % FIXME use_trace==false is misleading and next to useless
         
-        if nargin < 2
-            use_trace = true; % default: apply trace
-        end
-        
-        if use_trace && ~self.cache.g_is_stale 
+        if ~self.cache.g_is_stale 
             ret = self.cache.g;
             return;
         end
@@ -335,14 +330,9 @@ classdef dynamo < matlab.mixin.Copyable
         % Try to figure out which k requires least additional computation.
         k = self.cache.g_setup_recalc();
         self.cache_refresh();
+        ret = trace_matmul(self.cache.L{k}, self.cache.U{k});
 
-        if use_trace
-            ret = trace_matmul(self.cache.L{k}, self.cache.U{k});
-            self.cache.g = ret;
-        else
-            ret = self.cache.L{k} * self.cache.U{k};
-            self.cache.g = trace(ret); % store the trace anyway
-        end
+        self.cache.g = ret;
         self.cache.g_is_stale = false;
     end
   
@@ -350,7 +340,8 @@ classdef dynamo < matlab.mixin.Copyable
     function ret = X(self, k)
     % Returns X(t_k), the controlled system at time t_k.
     % If no k is given, returns the final state X(t_n).
-        
+
+    % TODO maybe suboptimal, should we use L{i} in the open system case?
         if nargin < 2
             k = length(self.cache.H);
         end

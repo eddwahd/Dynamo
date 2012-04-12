@@ -12,6 +12,7 @@ classdef cache < matlab.mixin.Copyable
       L  % Backward propagators. L{k-1} = L{k} * P{k-1};
          % L{k} is the adjoint system at t = sum(tau(1:(k-1))) = t_{k-1}
       g
+      E
       
       H_is_stale
       P_is_stale
@@ -78,6 +79,7 @@ classdef cache < matlab.mixin.Copyable
 
           self.g_is_stale = true;
           self.g = NaN;
+          self.E = NaN;
       end
       
       

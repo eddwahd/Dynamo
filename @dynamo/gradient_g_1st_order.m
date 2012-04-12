@@ -1,5 +1,5 @@
-function [grad] = gradient_first_order_aprox(self, control_mask)
-% Gradient of auxiliary function g by first order approximation.
+function [grad] = gradient_g_1st_order(self, control_mask)
+% Gradient of the auxiliary function g by first order approximation.
 
 % dP_k/d_u \approx (-B_u * dt_k) * P_k
 % Exact if G_k commutes with B_u.
@@ -9,7 +9,7 @@ function [grad] = gradient_first_order_aprox(self, control_mask)
 % will be most efficient as it knows of all calculations needed at once, and not piece-meal).
 
 slot_mask = any(control_mask, 2);
-self.cache.H_needed_now(slot_mask) = true; % H_{slot}
+self.cache.H_needed_now(slot_mask) = true;           % H_{slot}
 self.cache.U_needed_now([false; slot_mask]) = true;  % U_{slot+1}
 self.cache.L_needed_now([false; slot_mask]) = true;  % L_{slot+1}
 self.cache_refresh();
@@ -36,4 +36,3 @@ for z = 1:length(Ts)
     end
     grad(z) = temp;
 end
-

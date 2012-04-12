@@ -1,5 +1,5 @@
-function [grad] = gradient_exact(self, control_mask)
-% Exact gradient of auxiliary function g.
+function [grad] = gradient_g_exact(self, control_mask)
+% Exact gradient of the auxiliary function g.
 %
 % Gradient of the auxiliary function g with respect to the controls
 % specified in control_mask. Uses eigendecomposition.

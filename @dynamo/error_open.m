@@ -6,18 +6,11 @@ function [err, grad] = error_open(self, control_mask)
 
 % D(A,B) = d^2(A,B)/|A|^2 = 1 +|B|^2/|A|^2 -2 f(A,B) 
 
+
+err = normalized_distance(self.system.X_final, self.X(), self.system.norm2);
+self.cache.E = err;
+
 if nargin == 2
-    temp = self.gradient_open_1st_order(control_mask);
-    grad = (2 / self.system.norm2) * temp;
+    grad = self.config.gradient_func(self, control_mask);
 end
-
-X_n = self.X();
-
-% fidelity
-f = real(inprod(self.system.X_final, X_n));
-
-% |X_n|^2
-B_norm2 = norm2(X_n);
-
-err = 1 + (B_norm2 -2*f) / self.system.norm2;
 end

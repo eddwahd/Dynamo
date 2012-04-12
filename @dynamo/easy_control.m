@@ -29,7 +29,11 @@ tau_c = acos(0) * ones(t_shape); % halfway
 
 if ~isempty(fields)
     % constant initial controls
-    % row vector, one value for each control field
+
+    if isscalar(fields)
+        fields = fields * ones(1, n_controls);
+    end
+    % now fields should be a row vector, one value for each control field
     
     raw = self.seq.inv_transform(fields);
     if ~t_dependent

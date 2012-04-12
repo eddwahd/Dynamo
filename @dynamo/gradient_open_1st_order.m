@@ -35,10 +35,15 @@ for z = 1:length(Ts)
     temp = X_n - self.system.X_final;
     
     if c == tau_c
+        % exact
         temp = -self.seq.tau_deriv(t) * inprod(temp, self.cache.L{t+1} * self.cache.H{t} * self.cache.U{t+1});
     else
+        % approximate
         temp = -self.seq.tau(t) * self.seq.fields_deriv(t, c) * inprod(temp, self.cache.L{t+1} * self.system.B{c} * self.cache.U{t+1});
     end
     grad(z) = real(temp);
 end
+
+% normalization
+grad = (2 / self.system.norm2) * grad;
 end
