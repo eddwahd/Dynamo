@@ -123,18 +123,40 @@ classdef qsystem < matlab.mixin.Copyable
 
         self.description = desc;
         
-        dim = self.dimension();
+        D = self.dimension();
         n_controls = length(self.B);
         
         if nargin < 3 || isempty(st_labels)
-            st_labels = char('0' + (1:dim).');
+            % use default state labels
+            st_labels = char('0' + (1:D).');
+        elseif ~iscell(st_labels)
+            % it's a dim vector, use standard computational basis labeling
+            dim = st_labels;
+            if prod(dim) ~= D
+                error('Dimension vector given does not match the total Hilbert space dimension.')
+            end
+            
+            n = length(dim);
+            ket = zeros(1,n);
+            st_labels = cell(1, D);
+            % build the labels
+            for k=1:D
+                st_labels{k} = char(ket + '0');
+                for b = n:-1:1 % start from least significant digit
+                    ket(b) = ket(b)+1;
+                    if ket(b) < dim(b)
+                        break;
+                    end
+                    ket(b) = 0;
+                end
+            end
         end
 
         if nargin < 4 || isempty(c_labels)
             c_labels = char('0' + (1:n_controls).');
         end
         
-        if length(st_labels) ~= dim
+        if length(st_labels) ~= D
             error('Number of state labels given does not match the Hilbert space dimension.')
         end
         self.state_labels = st_labels;

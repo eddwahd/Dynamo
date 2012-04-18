@@ -1,5 +1,5 @@
 function [C, labels] = control_ops(dim, ctrl)
-% Returns a cell vector of control operators.
+% Returns a cell vector of local control operators.
 %  [C, labels] = control_ops(dim, ctrl)
 %
 %  dim is the system dimension vector.
@@ -21,11 +21,10 @@ function [C, labels] = control_ops(dim, ctrl)
 %  Example:
 %    The function call
 %
-%        C = control_ops([2 2 2], 'xy,3d)
+%        C = control_ops([2 2 2], 'xy,3d')
 %
 %    generates control operators for a three-qubit system: X and Y
-%    controls for every qubit, plus a dephasing control for the
-%    third one.
+%    rotations for every qubit, plus dephasing for the third one.
 
 % Ville Bergholm 2011-2012
 

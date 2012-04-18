@@ -5,8 +5,10 @@ function J = angular_momentum(n)
 %  Returns the angular momentum matrices \vec(J)/\hbar
 %  for the d-dimensional subspace defined by the
 %  quantum number j == (d-1)/2, as a cell vector.
+%
+%  Normalization: [Jx, Jy] = 1i * Jz,  expm(1i * J{k} * \theta) is a rotation by \theta radians.
 
-% Ville Bergholm 2009-2011
+% Ville Bergholm 2009-2012
 
 
 if (n < 1)

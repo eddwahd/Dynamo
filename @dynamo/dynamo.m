@@ -161,7 +161,6 @@ classdef dynamo < matlab.mixin.Copyable
             sys.liouville(H_drift, L_drift, H_ctrl);
 
             % The generator isn't usually normal, so we cannot use the exact gradient method
-            self.opt.max_violation = 0; % track the worst violation
 
             if strcmp(extra_str, 'overlap')
                 % overlap error function
@@ -206,8 +205,10 @@ classdef dynamo < matlab.mixin.Copyable
         % store the prepared fields
         self.config = config;
         self.system = sys;
-        
+
+        % init miscellaneous things
         self.opt.ui_fig = [];
+        self.opt.max_violation = 0; % track the worst gradient approximation violation
     end
 
 

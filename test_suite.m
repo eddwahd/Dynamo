@@ -47,7 +47,7 @@ else
   switch p
   case {13, 14}
     dim = [2 2 2 2];
-    desc = sprintf('Completely ZZ-coupled graph, 4 qubits, XY control.');
+    desc = 'Completely ZZ-coupled graph, 4 qubits, XY control.';
     J = 2 * [0 0 1]; % Ising coupling
     C4 = diag(ones(1, 3), 1) +diag(1, 3); % C_4 connection graph
     C_full = C4 + diag(ones(1, 2), 2); % full connection graph
@@ -61,7 +61,7 @@ else
     % NV centers in diamond
     error('Not implemented yet.')
     dim = [2 2];
-    desc = sprintf('NV centers in diamond.');
+    desc = 'NV centers in diamond.';
     E = 2*pi * [-134.825, -4.725, 4.275, 135.275]; % MHz
     mu = [1, 1/3.5, 1/1.4, 1/1.8];
 
@@ -91,21 +91,21 @@ else
     dim = 2 * ones(1, q);
     desc = sprintf('Heisenberg chain, %d qubits, XY control at one end.', q);
     H = heisenberg_chain(dim, 2*[1 1 1]);
-    [C, cl] = control_ops(dim, 'xy', q - 2);
+    [C, cl] = control_ops(dim, sprintf('1:%dxy', q - 2));
     final = rand_U(prod(dim));
 
   case {22, 23}
     if p == 22
-        d = 13;
+        dim = 13;
     else
-        d = 7;
+        dim = 7;
     end
-    desc = sprintf('A single spin-%g, J_z, J_x control.', (d-1)/2);
-    J = angular_momentum(d);
+    desc = sprintf('A single spin-%g, J_z, J_x control.', (dim-1)/2);
+    J = angular_momentum(dim);
     H = J{3}^2;
     C = {J{3}, J{1}};
     cl = {'J_z', 'J_x'};
-    final = rand_U(d);
+    final = rand_U(dim);
     
   otherwise
     error('Unknown problem.');
@@ -115,7 +115,7 @@ fprintf('%s\n\n', desc)
 initial = eye(size(final));
 
 dyn = dynamo('S gate', initial, final, H, C);
-dyn.system.set_labels(desc, {}, cl);
+dyn.system.set_labels(desc, dim, cl);
 
 
 %% Initial control sequence

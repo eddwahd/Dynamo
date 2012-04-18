@@ -12,11 +12,11 @@ randseed(seed); % Optional. Allows the same pseudo-random initial controls to be
 
 %% Pauli matrices etc.
 
-SX = [0 1; 1 0];
-SY = [0 -1i; 1i 0];
-SZ = [1 0; 0 -1];
+X = [0 1; 1 0];
+Y = [0 -1i; 1i 0];
+Z = [1 0; 0 -1];
 I = eye(2);
-SP = (SX +1i*SY)/2;
+SP = (X +1i*Y)/2;
 
 
 %% Define the physics of the problem
@@ -27,27 +27,19 @@ dim = 2 * ones(1, n_qubits);
 D = prod(dim);
 
 
-relax1 = {kron(SP, I)};
-relax2 = {kron(I, SP)};
-dephase1 = {kron(SZ, I)};
-dephase2 = {kron(I, SZ)};
-depolarize1 = {kron(SX, I), kron(SY, I), kron(SZ, I)};
-depolarize2 = {kron(I, SX), kron(I, SY), kron(I, SZ)};
-
-
 % Drift Hamiltonian
 J = 4 * [0 0 1]; % Ising coupling
 C = diag(ones(1, n_qubits - 1), 1); % linear chain
-H_drift = heisenberg(dim, @(s, a, b) J(s) * C(a,b)) -op_sum(dim, @(k) (k+2)*SZ);
+H_drift = heisenberg(dim, @(s, a, b) J(s) * C(a,b)) -op_sum(dim, @(k) (k+2)*Z);
 
 
 % Control Hamiltonians / Liouvillians
-%[H_ctrl, c_labels] = control_ops(dim, 'xy', 2);
-H_ctrl = {op_sum(dim, @(k) SX), op_sum(dim, @(k) SY)};
+%[H_ctrl, c_labels] = control_ops(dim, '1:2xy');
+H_ctrl = {op_sum(dim, X), op_sum(dim, Y)};
 c_labels = {'X', 'Y'};
-control_type = '..';
 
 % transformed controls?
+control_type = '..';
 control_par = {};
 
 % Drift Liouvillian (noise / dissipation)
@@ -67,13 +59,14 @@ final = qft(length(dim));
 
 dyn = dynamo('S gate', initial, final, H_drift, H_ctrl);
 %dyn = dynamo('SB gate', initial, final, H_drift, H_ctrl, L_drift);
-dyn.system.set_labels('Ising chain', '', c_labels);
+dyn.system.set_labels('Ising chain with non-uniform field, uniform controls.', dim, c_labels);
+
 
 %% Initial controls
 
 % random initial controls
-T = 125;
-dyn.seq_init(100, T * [0.5, 1.0], control_type, control_par);
+T = 50;
+dyn.seq_init(70, T * [0.5, 1.0], control_type, control_par);
 dyn.easy_control([0, 0], 0, 1, true);
 
 
