@@ -17,22 +17,29 @@ seq.B = dyn.system.B;
 seq.tau = dyn.seq.tau;
 seq.control = dyn.seq.fields;
 
-dim = [2 2];
+dim = dyn.system.dim;
 
-psi = state(inv_vec(dyn.system.X_initial), dim);
+% what should we plot?
+if dyn.system.liouville
+    ini = state(inv_vec(dyn.system.X_initial), dim);
+    fin = state(inv_vec(dyn.system.X_final), dim);
+else
+    ini = state(dyn.system.X_initial, dim);
+    fin = state(dyn.system.X_final, dim);
+end
+
 
 figure()
 if 1
-    % apply sequence on state psi, plot the evolution
-    [out, t] = seq_propagate(psi, seq, @bloch_vector, 0.01);
+    % apply sequence on state ini, plot the evolution
+    [out, t] = seq_propagate(ini, seq, @bloch_vector, 0.01);
     plot_state_trajectory(out, linestyle, reset);
 
-    s = state(inv_vec(dyn.system.X_final), dim);
-    B = {bloch_vector(s)};
+    B = {bloch_vector(fin)};
     plot_state_trajectory(B, 'm.', false);
 else
     % purity plot
-    [out, t] = seq_propagate(psi, seq, @purity, 0.1);
+    [out, t] = seq_propagate(ini, seq, @purity, 0.1);
     out = real(cell2mat(out))
     dyn.plot_seq();
     hold on;

@@ -18,7 +18,7 @@ final = qft(q);
 initial = eye(size(final));
 
 dyn = dynamo('S gate', initial, final, H, C);
-dyn.system.set_labels(desc, {}, cl);
+dyn.system.set_labels(desc, dim, cl);
 dyn.seq_init(100, 12 * [1, 0]);
 dyn.easy_control(0.1 * ones(1,6));
 

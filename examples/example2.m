@@ -12,13 +12,13 @@ fprintf('%s\n\n', desc);
 J = 2 * [1 1 1]; % Heisenberg interaction
 C = diag(ones(1, q-1), 1); % topology: linear chain
 H = heisenberg(dim, @(s,a,b) J(s)*C(a,b));
-[C, cl] = control_ops(dim, 'xy', 1);
+[C, cl] = control_ops(dim, '1xy');
 
 final = qft(q);
 initial = eye(size(final));
 
 dyn = dynamo('S gate', initial, final, H, C);
-dyn.system.set_labels(desc, {}, cl);
+dyn.system.set_labels(desc, dim, cl);
 dyn.seq_init(100, 16 * [1, 0]);
 dyn.easy_control(0.1 * ones(1,2));
 

@@ -9,3 +9,9 @@
 *.out
 *.pdf
 *.toc
+*.eps
+*.png
+*.fig
+*.mat
+*.zip
+

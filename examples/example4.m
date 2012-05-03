@@ -50,7 +50,7 @@ Gamma = 1 * 1e-2 * ones(1, n_sites)
 transfer_rate = 6
 
 
-desc = sprintf('%d-qubit exciton transport chain with XY interaction, dephasing controls, relaxation.', n_sites);
+desc = sprintf('%d-qubit exciton transport chain with XX+YY interaction, dephasing controls, relaxation.', n_sites);
 % 'transfer rate = %g, split = %g, v = %g', n_sites,transfer_rate,omega(2),v);
 fprintf('%s\n\n', desc);
 

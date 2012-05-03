@@ -10,8 +10,8 @@ function [H] = heisenberg(dim, J)
 % Examples: J = @(s,a,b) C(s)
 %
 %  C = [1 1 1] gives the isotropic Heisenberg coupling.
-%  C = [1 1 0] gives the XY coupling.
-%  C = [0 0 1] gives the Ising coupling.
+%  C = [1 1 0] gives the XX+YY coupling.
+%  C = [0 0 1] gives the Ising ZZ coupling.
     
 % Ville Bergholm 2011-2012
 

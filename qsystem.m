@@ -4,57 +4,48 @@ classdef qsystem < matlab.mixin.Copyable
 % Ville Bergholm 2011-2012
     
   properties
-    description = '' % System description string
-    liouvillian      % Are the objects below in Liouville space or Hilbert space?
+    description = '' % description string
+    dim              % dimension vector for the Hilbert space of the system
+    liouville        % Do the system objects X reside in Liouville or Hilbert space?
     A                % drift generator
     B                % cell vector of control generators
-    B_is_Hamiltonian % true if corresponding B item is a Hamiltonian
-    M
+    B_is_Hamiltonian % true if corresponding B item corresponds to a Hamiltonian
     X_initial        % initial state
     X_final          % final state
     norm2            % squared norm of final state
     state_labels   = {} % names for the Hilbert space computational basis states
     control_labels = {} % names for the controls
   end
-    
-  methods
-    function std_representation(self, i, f)
-    % X_* are Hilbert space objects (kets or operators)
-        self.X_initial = i;
-        self.X_final   = f;
-    end
 
+  
+  methods (Access = private)
+    function liouville_gens(self, H_drift, L_drift, H_ctrl)
+    % Set up Liouville space generators for a system.
 
-    function vec_representation(self, i, f)
-    % X_* are Liouville space vectors corresponding to
-    % vec-torized state operators.
+        self.A = -L_drift +1i*comm(H_drift);
 
-    % state vectors are converted to state operators
-        if size(i, 2) == 1
-            i = i * i';
+        n_controls = length(H_ctrl);
+        self.B = cell(1, n_controls);
+        self.B_is_Hamiltonian = true(1, n_controls);
+
+        % Liouville space dimension
+        D = length(self.X_final);
+
+        for k=1:n_controls
+            % check for Liouvillian controls
+            if length(H_ctrl{k}) ~= D
+                self.B{k} = 1i*comm(H_ctrl{k}); % Hamiltonian
+            else
+                self.B{k} = -H_ctrl{k}; % Liouvillian
+                self.B_is_Hamiltonian(k) = false;
+            end
         end
-        if size(f, 2) == 1
-            f = f * f';
-        end
-
-        self.X_initial = vec(i);
-        self.X_final   = vec(f);
     end
 
 
-    function vec_gate_representation(self, i, f)
-    % X_* are Liouville space operators corresponding to
-    % vec-torized unitary gates.
-        self.X_initial = lrmul(i, i'); % == kron(conj(i), i);
-        self.X_final   = lrmul(f, f'); % == kron(conj(f), f);
-    end
-
-
-    function hilbert(self, H_drift, H_ctrl)
+    function hilbert_gens(self, H_drift, H_ctrl)
     % Set up Hilbert space generators for a system.
-
-        self.liouvillian = false;
-        % (NOTE: generators are not pure Hamiltonians, there's an extra 1i!)
+    % (NOTE: generators are not pure Hamiltonians, there's an extra 1i!)
         self.A = 1i * H_drift;
 
         n_controls = length(H_ctrl);
@@ -63,7 +54,7 @@ classdef qsystem < matlab.mixin.Copyable
         for k=1:n_controls
             self.B{k} = 1i * H_ctrl{k};
         end
-        self.M = inprod_B(self.B);
+        %self.M = inprod_B(self.B);
 
         function M = inprod_B(B)
         % Computes the inner product matrix of the control operators.
@@ -78,43 +69,49 @@ classdef qsystem < matlab.mixin.Copyable
             % FIXME what about dissipative controls? superoperators?
         end
     end
+  end
+  
+  
+  methods
+    function hilbert_representation(self, i, f, H_drift, H_ctrl)
+    % X_* are Hilbert space objects (kets or operators)
 
-
-    function liouville(self, H_drift, L_drift, H_ctrl)
-    % Set up Liouville space generators for a system.
-
-        self.liouvillian = true;
-        self.A = -L_drift +1i*comm(H_drift);
-
-        n_controls = length(H_ctrl);
-        self.B = cell(1, n_controls);
-        self.B_is_Hamiltonian = true(1, n_controls);
-
-        % Liouville space dimension
-        dim = length(self.X_final);
-
-        for k=1:n_controls
-            % check for Liouvillian controls
-            if length(H_ctrl{k}) ~= dim
-                self.B{k} = 1i*comm(H_ctrl{k}); % Hamiltonian
-            else
-                self.B{k} = -H_ctrl{k}; % Liouvillian
-                self.B_is_Hamiltonian(k) = false;
-            end
-        end
-        self.M = eye(n_controls); % FIXME temporary fix, meaningless
+        self.liouville = false;
+        self.X_initial = i;
+        self.X_final   = f;
+        self.dim = size(i, 1);
+        self.hilbert_gens(H_drift, H_ctrl);
     end
 
 
-    function ret = dimension(self)
-    % Returns the dimension of the Hilbert space of the system.
+    function vec_representation(self, i, f, H_drift, L_drift, H_ctrl)
+    % X_* are Liouville space vectors corresponding to
+    % vec-torized state operators.
 
-        temp = length(self.A);
-        if self.liouvillian
-            ret = sqrt(temp);
-        else
-            ret = temp;
+        self.liouville = true;
+        % state vectors are converted to state operators
+        if size(i, 2) == 1
+            i = i * i';
         end
+        if size(f, 2) == 1
+            f = f * f';
+        end
+        self.X_initial = vec(i);
+        self.X_final   = vec(f);
+        self.dim = size(i, 1);
+        self.liouville_gens(H_drift, L_drift, H_ctrl);
+    end
+
+
+    function vec_gate_representation(self, i, f, H_drift, L_drift, H_ctrl)
+    % X_* are Liouville space operators corresponding to
+    % vec-torized unitary gates.
+
+        self.liouville = true;
+        self.X_initial = lrmul(i, i'); % == kron(conj(i), i);
+        self.X_final   = lrmul(f, f'); % == kron(conj(f), f);
+        self.dim = size(i, 1);
+        self.liouville_gens(H_drift, L_drift, H_ctrl);
     end
 
 
@@ -123,7 +120,7 @@ classdef qsystem < matlab.mixin.Copyable
 
         self.description = desc;
         
-        D = self.dimension();
+        D = prod(self.dim);
         n_controls = length(self.B);
         
         if nargin < 3 || isempty(st_labels)
@@ -141,7 +138,7 @@ classdef qsystem < matlab.mixin.Copyable
             st_labels = cell(1, D);
             % build the labels
             for k=1:D
-                st_labels{k} = char(ket + '0');
+                st_labels{k} = ['|', char(ket + '0'), '\rangle'];
                 for b = n:-1:1 % start from least significant digit
                     ket(b) = ket(b)+1;
                     if ket(b) < dim(b)
@@ -150,6 +147,7 @@ classdef qsystem < matlab.mixin.Copyable
                     ket(b) = 0;
                 end
             end
+            self.dim = dim; % store the dim vector (replacing the default scalar total dimension)
         end
 
         if nargin < 4 || isempty(c_labels)

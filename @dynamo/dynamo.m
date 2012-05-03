@@ -26,7 +26,7 @@ classdef dynamo < matlab.mixin.Copyable
   methods (Static)
     function ret = version()
     % Returns the current DYNAMO version.
-        ret = '1.3 alpha12';
+        ret = '1.3 alpha13';
     end
 
 
@@ -100,8 +100,7 @@ classdef dynamo < matlab.mixin.Copyable
               case 'state'
                 out = strcat(out, ' mixed state transfer');
                 % TODO more efficient Hilbert space implementation?
-                sys.vec_representation(initial, final);
-                sys.liouville(H_drift, 0, H_ctrl);
+                sys.vec_representation(initial, final, H_drift, 0, H_ctrl);
                 % g is always real, positive in this case so error_abs would work just as well
                 config.error_func = @error_real;
         
@@ -118,8 +117,7 @@ classdef dynamo < matlab.mixin.Copyable
                     end
                 end
 
-                sys.std_representation(initial, final);
-                sys.hilbert(H_drift, H_ctrl);
+                sys.hilbert_representation(initial, final, H_drift, H_ctrl);
         
                 if strcmp(extra_str, 'phase')
                     out = strcat(out, ' (with global phase (NOTE: unphysical!))');
@@ -146,22 +144,20 @@ classdef dynamo < matlab.mixin.Copyable
             switch task_str
               case 'state'
                 out = strcat(out, ' quantum state transfer');
-                sys.vec_representation(initial, final);
+                sys.vec_representation(initial, final, H_drift, L_drift, H_ctrl);
 
               case 'gate'
                 out = strcat(out, ' quantum map');
                 if any(input_dim == 1)
                     error('Initial and final states should be operators.')
                 end
-                sys.vec_gate_representation(initial, final);
+                sys.vec_gate_representation(initial, final, H_drift, L_drift, H_ctrl);
         
               otherwise
                 error('Unknown task.')
             end
-            sys.liouville(H_drift, L_drift, H_ctrl);
 
             % The generator isn't usually normal, so we cannot use the exact gradient method
-
             if strcmp(extra_str, 'overlap')
                 % overlap error function
                 % NOTE simpler error function and gradient, but final state needs to be pure
@@ -191,7 +187,7 @@ classdef dynamo < matlab.mixin.Copyable
             error('Unknown system specification.')
         end
         fprintf(out);
-        if sys.liouvillian
+        if sys.liouville
             fprintf('Liouville');
         else
             fprintf('Hilbert');
@@ -406,7 +402,7 @@ classdef dynamo < matlab.mixin.Copyable
         end
 
         % what should we plot?
-        if self.system.liouvillian
+        if self.system.liouville
             state_probs = @prob_stateop;
         else
             state_probs = @prob_ket;
