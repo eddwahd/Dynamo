@@ -11,6 +11,7 @@ classdef cache < matlab.mixin.Copyable
          % U{k} is the system at t = sum(tau(1:(k-1))) = t_{k-1}
       L  % Backward propagators. L{k-1} = L{k} * P{k-1};
          % L{k} is the adjoint system at t = sum(tau(1:(k-1))) = t_{k-1}
+      UL_mixed  % special case: mixed states in Hilbert space representation?
       g
       E
       
@@ -31,7 +32,7 @@ classdef cache < matlab.mixin.Copyable
   end
     
   methods
-      function self = cache(n_timeslots, U_start, L_end, use_eig)
+      function self = cache(n_timeslots, U_start, L_end, use_eig, UL_hack)
       % Set up caching (once we know the number of time slices and U and L endpoints).
 
           temp = [1, n_timeslots];
@@ -44,6 +45,7 @@ classdef cache < matlab.mixin.Copyable
           else
               self.calcPfromHfunc = @calcPfromH_expm;
           end
+          self.UL_mixed = UL_hack;
 
           self.H = cell(temp);
           self.P = cell(temp);
@@ -165,16 +167,25 @@ classdef cache < matlab.mixin.Copyable
 
           % Compute the Us - forward propagation (we never recompute U{1})
           u_idx = find(U_recompute_now);
-          for t=u_idx
-              self.U{t} = self.P{t-1} * self.U{t-1};
-          end
-
           % Compute the Ls - adjoint system propagation
-          el_idx = fliplr(find (L_recompute_now));
-          for t=el_idx
-              self.L{t} = self.L{t+1} * self.P{t};
+          el_idx = fliplr(find(L_recompute_now));
+          if self.UL_mixed
+              % mixed states, unitary evolution: propagate from both sides
+              for t=u_idx
+                  self.U{t} = self.P{t-1} * self.U{t-1} * self.P{t-1}';
+              end
+              for t=el_idx
+                  self.L{t} = self.P{t}' * self.L{t+1} * self.P{t};
+              end
+          else
+              for t=u_idx
+                  self.U{t} = self.P{t-1} * self.U{t-1};
+              end
+              for t=el_idx
+                  self.L{t} = self.L{t+1} * self.P{t};
+              end
           end
-
+          
           % Mark what has been actually computed
           temp = [1, n_timeslots];
 

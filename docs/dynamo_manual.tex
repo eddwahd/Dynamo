@@ -117,6 +117,7 @@ P_k := \exp(-G_k \tau_k),
 \ee
 with
 \be
+\label{eq:Xn}
 X_k := X(t_k) = \prod_{j=1}^{k} P_j X(t_0).
 \ee
 The propagators, like the generators, always act on~$X$ by multiplication
@@ -147,9 +148,6 @@ System and adjoint system propagators:
 U_k &:= P_k \cdots P_1,\\      % U_k X_0 = X_k
 \Lambda_k &:= P_n \cdots P_{k+1}.
 \end{align}
-NOTE: currently the code uses a different definition:
-$U_{k+1} = P_k \cdots P_1 X_0 = X_k$ and
-$\Lambda_k = X_f^\dagger P_n \cdots P_k$ (MATLAB indexing limitations...).
 
 \begin{table}[h]
 \label{table:slices}
@@ -186,7 +184,7 @@ $\Lambda_k = P_{n} \cdots P_{k+1}$.}
 \section{Optimization}
 
 In what follows, all quantum states are assumed to be normalized to
-unity. $N = \dim \hilb{H}$~is the dimension of the Hilbert space of the system.
+unity. $N = \dim \hilb{H}$~is the dimension of the Hilbert space~$\hilb{H}$ of the system.
 The results of this section are summarized in Table~\ref{table:tasks}
 
 
@@ -217,8 +215,7 @@ f(A, B)
 \ee
 is the normalized \emph{fidelity}\footnote{
 There is another widely used quantity called fidelity in quantum information science which is different from the present one.}.
-If $A$ and $B$ are Hermitian, the fidelity corresponds to an inner product.
-
+If $A$ and $B$ are Hermitian, $\re$ is unnecessary and the fidelity corresponds to an inner product.
 % NOTE fidelity is the real part of an inner product, one can use Cauchy-Schwarz inequality...
 Clearly $f(A, A) = 1$, and
 the triangle inequality $|A-B| \le |A|+|B|$ yields
@@ -232,10 +229,9 @@ the triangle inequality $|A-B| \le |A|+|B|$ yields
 since $f(A, -B) = -f(A, B)$.
 
 
-(X1): Is minimum distance equivalent to maximum fidelity?
-If this holds, we may optimize fidelity instead of distance.
+Is minimum distance equivalent to maximum fidelity?
 If $|A|^2$ and $|B|^2$ are constant
-from Eq.~\eqref{eq:df} we can see that (X1) clearly holds.
+from Eq.~\eqref{eq:df} we can see that this clearly holds.
 
 
 
@@ -243,19 +239,21 @@ from Eq.~\eqref{eq:df} we can see that (X1) clearly holds.
 
 
 \begin{table}
-\begin{tabular}{l|c|c|l|l|l|l}
-& task & H/L & X & $|X|^2$ & error function & $f_\text{max}$\\
+\begin{tabular}{l|c|c|l|l|l}
+& task & H/L & X & $|X|^2$ & error function\\
 \hline
 Closed system S
-& $\rho_i \to \rho_f$ & L & $\cvec(\rho)$ & $P(\rho)$
-& $E_\text{real}$ & $\sqrt{\frac{P(\rho_i)}{P(\rho_f)}}$\\
 & $\ket{\psi_i} \to \ket{\psi_f}$ & H & $\ket{\psi}$ & 1 &
-$E_\text{abs}$ & 1\\
-& $V_i \to V_f$ & H & $V$ & $N$ & $E_\text{abs}$ & 1\\
+$E_\text{abs}$ (with phase: $E_\text{real}$)\\
+%& $\rho_i \to \rho_f$ & L & $\cvec(\rho)$ & $P(\rho)$ & $E_\text{real}$\\
+& $\rho_i \to \rho_f$ & H & $\rho$ & $P(\rho)$ & $E_\text{mixed}$\\
+%& $\rho_i \to \ketbra{\psi_f}{\psi_f}$ & H & $\rho$ & $P(\rho)$ & $E_\text{real}$ (overlap)\\
+& $U_i \to U_f$ & H & $U$ & $N$ & $E_\text{abs}$ (with phase: $E_\text{real}$)\\
 \hline
 Open system SB
-& $\rho_i \to \rho_f$ & L & $\cvec(\rho)$ & $P(\rho)$ &
-$E_\text{open}, E_\text{real}$\\
+& $\rho_i \to \rho_f$ & L & $\cvec(\rho)$ & $P(\rho)$ & $E_\text{open}$\\
+& $\rho_i \to \ketbra{\psi_f}{\psi_f}$ & L & $\cvec(\rho)$ &
+$P(\rho)$ & $E_\text{real}$ (overlap)\\
 & $F_i \to F_f$ & L & $F$ &  & $E_\text{open}$\\
 \end{tabular}
 \caption{Summary of the optimization tasks.}
@@ -266,49 +264,137 @@ $E_\text{open}, E_\text{real}$\\
 \subsubsection{Error functions}
 
 \begin{align}
-E_\text{real}(A, B) &:= f_\text{max} -\frac{1}{|A|^2} \re \tr(A^\dagger B),\\
-E_\text{abs}(A, B) &:= f_\text{max} -\frac{1}{|A|^2} |\tr(A^\dagger B)|,\\
-E_\text{open}(A, B) &:= 1 +\frac{|B|^2}{|A|^2} -2 \frac{1}{|A|^2} \re \tr(A^\dagger B).
+E_\text{real}(A, B) &:= 1 -\frac{1}{|A|^2} \re g(A, B),\\
+E_\text{abs}(A, B) &:= 1 -\frac{1}{|A|^2} |g(A, B)|,\\
+E_\text{open}(A, B) &:= 1 +\frac{|B|^2}{|A|^2} -2 \frac{1}{|A|^2} \re \tr(A^\dagger B),
 \end{align}
-
-
-Auxiliary function~$g$:
-\be
-g(A, B) := \tr(A^\dagger B).
-\ee
-Gradients:
+where the auxiliary function~$g(A, B) := \tr(A^\dagger B)$.
+All of these functions and their gradients can be efficiently computed
+using the $U$s and $\Lambda$s
+for any $j, k$:
 \begin{align}
-\dd{E_\text{real}(A,B)}{u}
-&= -\frac{1}{|A|^2} \re \left( \dd{g}{u} \right),\\
-\dd{E_\text{abs}(A,B)}{u}
-&= -\frac{1}{|A|^2} \re \left(\frac{g^*}{|g|} \dd{g}{u} \right),\\
-\dd{E_\text{open}(A, B)}{u}
-&= \frac{2}{|A|^2} \re \tr\left((B-A)^\dagger \dd{B}{u}\right).
+g(X_f, X_n) &= \tr(X_f^\dagger \Lambda_k U_k X_i)
+= \tr(\Lambda'_{k+1} U'_{k+1}),\\
+g(Y_f, Y_n) &= \tr(\Lambda_k^\dagger Y_f^\dagger \Lambda_k U_k Y_i U_k^\dagger)
+= \tr(\Lambda'_{k+1} U'_{k+1})\\
+E_\text{open}(X_f, X_n) &= 1 +\frac{|\Lambda_j U_j X_i|^2}{|X_f|^2} -2 \frac{1}{|X_f|^2} \re \tr(X_f^\dagger \Lambda_k U_k X_i)
+= 1 +\frac{|\Lambda'_{j+1} U'_{j+1}|^2}{|X_f|^2} -2 \frac{1}{|X_f|^2} \re \tr(X_f^\dagger \Lambda'_{k+1} U'_{k+1}).
 \end{align}
 
 
-%The norm derivative gives
-%\be
-%\dd{|B|^2}{u}
-%= \dd{}{u} \tr(B^\dagger B)
-%= \tr\left(B^\dagger \dd{B}{u}\right)
-%+\tr\left(\dd{B^\dagger}{u} B \right)
-%= 2 \re \tr\left(B^\dagger \dd{B}{u}\right).
-%\ee
+Gradients ($X_f$ is always constant):
+\footnote{Note the $2 \re$ in the gradient expression  
+for the special case of mixed state transfer in a closed system.}
+\begin{align}
+\dd{E_\text{real}(X_f,X_n)}{u}
+&= -\frac{1}{|X_f|^2} \re \left( \dd{g}{u} \right),\\
+\dd{E_\text{abs}(X_f,X_n)}{u}
+&= -\frac{1}{|X_f|^2} \re \left(\frac{g^*}{|g|} \dd{g}{u} \right),\\
+\dd{g(X_f, X_n)}{u} &= \tr(X_f^\dagger \Lambda_{k} \left(\dd{P_k}{u}\right) U_{k-1} X_i)
+= \tr(\Lambda'_{k+1} \left(\dd{P_k}{u}\right) U'_{k}),\\
+\dd{g(Y_f, Y_n)}{u} &= 2 \re \tr\left(\Lambda_k^\dagger Y_f^\dagger \Lambda_k \left(\dd{P_k}{u}\right) U_{k-1} Y_i U_{k-1}^\dagger P_k^\dagger \right)
+= 2 \re \tr\left(\Lambda'_{k+1} \left(\dd{P_k}{u}\right) U'_{k} P_k^\dagger \right), \quad \text{and}\\
+\dd{E_\text{open}(X_f, X_n)}{u}
+&= \frac{2}{|X_f|^2} \re \tr\left((X_n-X_f)^\dagger \dd{X_n}{u}\right)
+= \frac{2}{|X_f|^2} \re \tr\left((\Lambda_k U_k X_i -X_f)^\dagger  \Lambda_{k} \left(\dd{P_k}{u}\right) U_{k-1} X_i \right)\\
+&= \frac{2}{|X_f|^2} \re \tr\left((\Lambda'_{j+1} U'_{j+1} -X_f)^\dagger  \Lambda'_{k+1} \left(\dd{P_k}{u}\right) U'_{k} \right).
+\end{align}
+The form of these expressions lead us to cache slightly different objects with
+different error functions to speed up the computation, presented in table~\ref{table:UL}.
 
+\begin{table}
+\begin{tabular}{l|c|c}
+error function & $U'_{k+1}$ = $X_k$ & $\Lambda'_{k+1}$\\
+\hline
+$E_\text{abs}$, $E_\text{real}$ & $U_k X_i$ & $X_f^\dagger \Lambda_k$\\
+$E_\text{mixed}$ & $U_k Y_i U_k^\dagger$ & $\Lambda_k^\dagger Y_f^\dagger \Lambda_k$\\
+$E_\text{open}$ & $U_k X_i$ & $\Lambda_k$
+\end{tabular}
+\caption{Definitions of the cached objects $U'$ and $\Lambda'$ used in the MATLAB
+  code. $k \in \{0, \ldots, n\}$.}
+\label{table:UL}
+\end{table}
 
 
 \subsection{Closed system S}
 
-In a closed system, the propagators~$P_k$ are always
+In a closed system, the generators~$G_k$ are Hamiltonians (times~$i$)
+and the propagators~$P_k$ are thus always
 unitary. Consequently, the purity of a state is conserved.
+
+
+\subsubsection{Pure state transfer $\ket{\psi_i} \to \ket{\psi_f}$}
+\label{sec:closed-pure}
+
+%Maximize state overlap, essentially
+$X = \ket{\psi} \in \hilb{H}$, a Hilbert space state vector.
+The states are assumed normalized, such that $|X|^2 = \braket{\psi}{\psi} = 1$.
+Since global phase has no physical significance, our error function is
+\be
+E(X_f, X_n) = \frac{1}{2} \min_{\phi \in \R} D(X_f, e^{i \phi} X_n)
+= 1 -\max_{\phi \in \R} \re \left( e^{i \phi} \tr(X_f^\dagger X_n)\right)
+= 1 -|\tr(X_f^\dagger X_n)|
+= E_\text{abs}(X_f, X_n) \le 1.
+\ee
+
+\begin{comment}
+This result can also be obtained using the mixed state formula in the
+vec representation, with $\rho = \ketbra{\psi}{\psi}$ and thus
+$X = \cvec(\rho) = \ket{\psi^*} \otimes \ket{\psi}$.
+The fidelity diagram breaks into two pieces and
+we obtain
+\be
+f(X_f, X_n)
+= (\re) \left|(\tr) \bra{\psi_f}  P_n \cdots P_1 \ket{\psi_i} \right|^2.
+\ee
+with $0 \le f(X_f, X_n) \le 1$.
+Thus the problem simplifies back into Hilbert space
+(albeit with an extra absolute value squared in the expression for the fidelity), and we may equivalently
+choose $X = \ket{\psi}$.
+\end{comment}
+
+
+If global phase matters (NOTE: this is unphysical), we may minimize
+$D(X_f, X_n)$ directly:
+\be
+E(X_f, X_n)
+= \frac{1}{2} D(X_f, X_n)
+= 1 -\re \tr(X_f^\dagger X_n)
+= E_\text{real}(X_f, X_n) \le 2.
+\ee
+
 
 
 \subsubsection{Mixed state transfer $\rho_i \to \rho_f$}
 \label{sec:closed-mixed}
 
 To match the form of Eq.~\eqref{eq:master},
-the state operators are treated as vectors in Liouville space, $X~=~\cvec(\rho)$.
+the state operators need to be treated as vectors in Liouville space,
+$X~=~\cvec(\rho)$.
+This approach is fairly inefficient though, since in a closed system the
+propagators are always unitary and the full Liouville space is not
+needed. Hence we make an exception here, and \emph{do not} follow Eq.~\eqref{eq:master}.
+Instead, we define~$Y = \rho$, and remain within the Hilbert space.
+This choice gives $|Y|^2 = \tr(\rho^2) = P(\rho)$, the purity of~$\rho$.
+Eq.~\eqref{eq:master} is replaced by the von Neumann equation:
+\be
+\dot{Y} = \comm{-G(t)}{Y(t)},
+\ee
+and instead of Eq.~\eqref{eq:Xn} we have
+\be
+Y_k = P_k \cdots P_1 Y_i P_1^\dagger \cdots P_k^\dagger.
+\ee
+
+The error function is
+\be
+E_\text{mixed}(Y_f, Y_n)
+= \frac{1}{2} D(Y_f, Y_n)
+= \frac{1}{2}\left(1 +\frac{|Y_i|^2}{|Y_f|^2}\right) -\frac{1}{|Y_f|^2} \re \tr(Y_f^\dagger Y_n)
+= E_\text{real}(Y_f, Y_n) +\frac{1}{2}\left(\frac{|Y_i|^2}{|Y_f|^2} -1\right).
+\ee
+
+
+\begin{comment}
 %\footnote{It will of course turn out that this is equivalent to treating them as operators in Hilbert
 %space, $X~=~\rho$ as far as the results are concerned.}
 The goal here is to minimize state operator distance
@@ -337,141 +423,86 @@ If either $\rho_f$ or $\rho_i$ is pure,
 $\rho = \ketbra{\psi}{\psi}$,
 we have $|\rho|^2 = \braket{\psi}{\psi}^2 = 1$, and
 the diagram simplifies by splitting up.
-
-
-In some cases we are only interested in maximizing the projection of
-the state on a target pure state~$\ket{\psi_f}$. In this case the natural error
-function is
-\be
-\bra{\psi_f} \rho_n \ket{\psi_f}
-= \tr\left(\ketbra{\psi_f}{\psi_f} \rho_n \right)
-= (\re) \tr\left(X_f^\dagger X_n\right),
-\ee
-which is just equal to the fidelity. In the closed system case there's
-apparently no difference.
-
-
-
-TODO
-Alternatively, we can choose $X = \rho$ at the expense of a slightly
-more complicated expression for the fidelity:
-\begin{comment}
-\be
-f(X_f, X_n)
-= \frac{1}{P(X_f)} (\re) \tr(X_f^\dagger X_n)
-= \frac{1}{P(X_f)} (\re) \tr(X_f^\dagger  P_n ... P_1 X_i P_1^\dagger ... P_n^\dagger)
-\ee
-
-\be
-X_i := \left(\prod_{j=1}^{i} P_j\right) X_i \left(\prod_{j=1}^{i} P_j\right)^\dagger
-\ee
-
-\begin{align}
-\dd{f(X_f, X_n)}{u(t_j)}
-&= \re \left(\dd{g}{u(t_j)} \right)
-= \frac{1}{P(X_f)} (\re) \tr \left(X_f \dd{X_n}{u(t_j)}\right)\\
-&= \frac{1}{P(X_f)} \left(\tr \left(X_f P_n \cdots \dd{P_j}{u(t_j)} \cdots P_1 X_i P^\dagger_1 \cdots P^\dagger_n\right)
-+\tr\left(X_f P_n \cdots P_1 X_i P^\dagger_1 \cdots \dd{P^\dagger(t_j)}{u(t_j)} \cdots P^\dagger_n\right)\right)\\
-&= \frac{2}{P(X_f)} \re \tr\left(X_f P_n \cdots \dd{P_j}{u(t_j)} \cdots P_1 X_i P^\dagger_1 \cdots P^\dagger_n\right).
-\end{align}
-NOTE: last line not in paper!
 \end{comment}
 
-
-
-\subsubsection{Pure state transfer $\ket{\psi_i} \to \ket{\psi_f}$}
-\label{sec:closed-pure}
-
-Using the results from the previous section with both states pure,
-$\rho = \ketbra{\psi}{\psi}$, with
-$X = \cvec(\rho) = \ket{\psi^*} \otimes \ket{\psi}$,
-the fidelity diagram breaks into two pieces and
-we obtain
+In some cases we are only interested in maximizing the projection of
+the state on a target pure state~$\rho_f = \ketbra{\psi_f}{\psi_f}$. In this case the natural error
+function is
 \be
-f(X_f, X_n)
-= (\re) \left|(\tr) \bra{\psi_f}  P_n \cdots P_1 \ket{\psi_i} \right|^2.
+E(Y_f, Y_n)
+= 1 -\bra{\psi_f} \rho_n \ket{\psi_f}
+= 1 -\tr\left(\ketbra{\psi_f}{\psi_f} \rho_n \right)
+= 1 -\re \tr\left(Y_f^\dagger Y_n\right)
+= E_\text{real}(Y_f, Y_n) \le 1.
 \ee
-with $0 \le f(X_f, X_n) \le 1$.
-Thus the problem simplifies back into Hilbert space
-(albeit with an extra absolute value squared in the expression for the fidelity), and we may equivalently
-choose $X = \ket{\psi}$.
+Since $|Y_n|^2$ is constant, this error function is completely equivalent to the previous one.
 
 
-%Maximize state overlap
-% TODO redefine X, in which space does P operate?
+\subsubsection{Unitary propagator $\I \to U_f$}
 
+In this task we wish to generate a unitary gate~$U_f$ up to global
+phase, starting from the identity. $X = U$ is a unitary operator on~$\hilb{H}$, and
+thus $|X|^2 = \tr(U^\dagger U) = \tr(\I) = N$.
 
-If global phase matters (NOTE: this is unphysical), we may define $X = \ket{\psi}$ and minimize
-$D(X_f, X_n)$ directly, and since (X1) holds,
-equivalently maximize the corresponding fidelity
-%\be
-%f(X_f, X_n)
-%= \re (\tr) \left(X_f^\dagger P_n \cdots P_1 X_i \right),
-%\ee
-obeying
-$|f(X_f, X_n)| \le 1$.
-
-
-
-\subsubsection{Unitary propagator}
-
-In this task we wish to generate a unitary gate~$V_f$ up to global
-phase, starting from the identity~$V_i = \I$.
-We can get rid of phase by explicitly lifting the problem into
+Since global phase does not matter, the error function is
+\be
+E(X_f, X_n) = \frac{1}{2} \min_{\phi \in \R} D(X_f, e^{i \phi} X_n)
+= 1 -\max_{\phi \in \R} \frac{1}{N} \re \left( e^{i \phi} \tr(X_f^\dagger X_n)\right)
+= 1 -\frac{1}{N}|\tr(X_f^\dagger X_n)|
+= E_\text{abs}(X_f, X_n) \le 1.
+\ee
+\begin{comment}
+We can also get rid of phase by explicitly lifting the problem into
 Liouville space (see Eq.~\eqref{eq:L-unitary}),
 $X = \hat{V} = V^* \otimes V$,
 and then minimize the operator distance~$D(X_f, X_n)$.
 
 Using Eq.~\eqref{eq:hat-product}, the norm squared is 
 \be
-|\hat{V}|^2
+|X|^2 = |\hat{V}|^2
 = \tr(\hat{V}^\dagger \hat{V})
 = |\tr(V^\dagger V)|^2
 = |\tr(\I)|^2
 = N^2.
 \ee
-%\be
-%|U|^2 = \tr(U^\dagger U) = \tr(\I) = N.
-%\ee
 This is constant, so (X1) holds and we may maximize the fidelity instead:
 \be
 f(X_f, X_n)
-= \frac{1}{N^2} \re \tr \left(\hat{V_f}^\dagger \hat{V_n} \right)
+= \frac{1}{N^2} \re \tr \left(X_f^\dagger X_n \right)
 %= \frac{1}{N^2} (\re) \left| \tr \left(V_f^\dagger V_n \right) \right|^2
-= \frac{1}{N^2} (\re) \left| \tr \left(V_f^\dagger P_n \cdots P_1 V_i \right) \right|^2.
+= \frac{1}{N^2} (\re) \left| \tr \left(V_f^\dagger V_n \right) \right|^2.
 \ee
-It is clearly obeys $0 \le f(X_f, X_n) \le 1$.
+It clearly obeys $0 \le f(X_f, X_n) \le 1$.
 Much like in
 Sec.~\ref{sec:closed-pure},
 the problem simplifies back into Hilbert space, and we may equivalently
 choose~$X = V$.
+\end{comment}
 
-If global phase matters (NOTE: unphysical), we may choose~$X = V$ and directly minimize
-the operator distance~$D(X_f, X_n)$.
-For a unitary operator~$V$ we have $|V|^2 = N$, hence (X1) holds, and
-we can equivalently maximize the fidelity
-%\be
-%f(X_f, X_n)
-%= \frac{1}{N} \re \tr \left(X_f^\dagger P_n \cdots P_1 X_i \right)
-%\ee
-which obeys $|f(X_f, X_n)| \le 1$.
 
+If global phase matters (NOTE: unphysical), we may again directly minimize
+$D(X_f, X_n)$:
+\be
+E(X_f, X_n) = \frac{1}{2} D(X_f, X_n)
+= 1 -\frac{1}{N} \re \tr(X_f^\dagger X_n)
+= E_\text{real}(X_f, X_n) \le 2.
+\ee
 
 
 \subsection{Open system with bath S+B}
 
 In this case we have a system~$S$ coupled to a Markovian bath~$B$.
 The generators~$G_k$ are now Liouvillians, expressible in terms of
-Hamiltonians and Lindblad operators.
+Hamiltonians and Lindblad operators. Purity and unitarity are no
+longer necessarily conserved.
 
 
 \subsubsection{Mixed state transfer $\rho_i \to \rho_f$}
 
-Like in Sec.~\ref{sec:closed-mixed} we choose $X~=~\cvec(\rho)$ and
-minimize $D(X_f, X_n) = D(\rho_f, \rho_n)$.
-Likewise, we have
-$|X|^2 = P(\rho)$, but general Markovian propagation does not
-preserve this:
+$X~=~\cvec(\rho)$, a vector in Liouville space. Again, like in
+Sec.~\ref{sec:closed-mixed}, we obtain
+$|X|^2 = \tr(\rho^2) = P(\rho)$, but in general Markovian propagation
+does not preserve the purity of~$\rho$:
 \be
 |X_n|^2 = \tr\left(X_i^\dagger \left(\prod_{k=1}^{n} P_k\right)^\dagger \left(\prod_{k=1}^{n} P_k\right) X_i\right).
 \ee
@@ -481,40 +512,46 @@ P_k^\dagger P_k
 = \exp(-\tau_k G^\dagger_k) \exp(-\tau_k G_k)
 = \exp(-\tau_k (G_k^\dagger + G_k)).
 \ee
-If all the generators $G_k$ are antihermitian, this reduces to $\I$, and thus
-$|X_n|^2 = \tr(X_i^\dagger X_i) = |X_i|^2$.
-
-Usually this is not the case, (X1) is not satisfied and fidelity does not uniquely define the distance.
-%If it does, maximize it:
-%\be
-%|f(X_f, X_n)| \le \frac{|X_i|}{|X_f|}.
-%\ee
-%Otherwise,
-Hence we directly minimize~$D(X_f, X_n)$.
-
+If all the generators $G_k$ are antihermitian, this reduces to $\I$ and thus
+$|X_n|^2 = \tr(X_i^\dagger X_i) = |X_i|^2$, but usually this is not
+the case.
+%(X1) is not satisfied and fidelity does not uniquely define the distance.
+The correct error function is
+\be
+E(X_f, X_n)
+= D(X_f, X_n)
+= 1 +\frac{|X_n|^2}{|X_f|^2} -\frac{2}{|X_f|^2} \re \tr(X_f^\dagger X_n)
+= E_\text{open}(X_f, X_n).
+\ee
 
 If we are only interested in maximizing the projection of
-the state on a target pure state~$\ket{\psi_f}$, the natural error
-function is again the fidelity:
+the state on a target pure state~$\rho_f = \ketbra{\psi_f}{\psi_f}$, the natural error
+function is
 \be
-\bra{\psi_f} \rho_n \ket{\psi_f}
-= \tr\left(\ketbra{\psi_f}{\psi_f} \rho_n \right)
-= (\re) \tr\left(X_f^\dagger X_n\right),
+E(X_f, X_n)
+= 1 -\bra{\psi_f} \rho_n \ket{\psi_f}
+= 1 -\tr\left(\ketbra{\psi_f}{\psi_f} \rho_n \right)
+= 1 -(\re) \tr\left(X_f^\dagger X_n\right)
+= E_\text{real}(X_f, X_n) \le 1.
 \ee
 
 
 
 
-\subsubsection{General quantum map}
 
-General quantum map operator $X = F$ in Liouville space,
-minimize operator distance~$D(X_f, X_n)$.
+\subsubsection{General quantum map $\I \to F_f$}
 
-A unitary target map,
-$X_f = \hat{V}$, for example, gives $|X_f|^2 = N^2$.
-However, as shown above, the norm $|X_n|^2$ of the propagated operator
-is not necessarily constant and we must again minimize the full distance function~$D(X_f, X_n)$.
-
+$X = F$, a general quantum map in the vec representation on Liouville space.
+A unitary target map~$U_f$ would be given by
+$X_f = \hat{U_f}$, which yields $|X_f|^2 = N^2$.
+However, as shown in the previous section, the norm $|X_n|^2$ of the propagated operator
+is not necessarily constant. The error function is again
+\be
+E(X_f, X_n)
+= D(X_f, X_n)
+= 1 +\frac{|X_n|^2}{|X_f|^2} -\frac{2}{|X_f|^2} \re \tr(X_f^\dagger X_n)
+= E_\text{open}(X_f, X_n).
+\ee
 
 
 

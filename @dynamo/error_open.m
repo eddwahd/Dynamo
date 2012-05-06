@@ -11,6 +11,7 @@ err = normalized_distance(self.system.X_final, self.X(), self.system.norm2);
 self.cache.E = err;
 
 if nargin == 2
-    grad = self.config.gradient_func(self, control_mask);
+    grad = self.gradient(control_mask);
 end
+
 end

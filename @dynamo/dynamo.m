@@ -69,7 +69,7 @@ classdef dynamo < matlab.mixin.Copyable
         % Local time. TODO UTC or local time with timezone specifier would be better, but apparently MATLAB doesn't do that.
         config.date = datestr(now(), 31);
         config.task = task;
-        config.L_is_propagator = false;
+        config.UL_hack = false;
         
         [system_str, rem] = strtok(task);
         [task_str, rem] = strtok(rem);
@@ -95,15 +95,22 @@ classdef dynamo < matlab.mixin.Copyable
             if nargin == 6
                 error('L_drift not used in closed systems.')
             end
-    
+            % the generator is always Hermitian and thus normal => use exact gradient
+
+            sys.hilbert_representation(initial, final, H_drift, H_ctrl);
+
             switch task_str
               case 'state'
+                % TEST more efficient Hilbert space implementation
                 out = strcat(out, ' mixed state transfer');
-                % TODO more efficient Hilbert space implementation?
-                sys.vec_representation(initial, final, H_drift, 0, H_ctrl);
-                % g is always real, positive in this case so error_abs would work just as well
+                if any(input_dim == 1)
+                    error('Initial and final states should be state operators.')
+                end
                 config.error_func = @error_real;
-        
+                config.f_max = 0.5 * (1 + norm2(sys.X_initial) / norm2(sys.X_final));
+                config.gradient_func = @gradient_g_mixed_exact;
+                config.UL_hack = true;
+                
               case {'ket', 'gate'}
                 if strcmp(task_str, 'ket')
                     out = strcat(out, ' pure state transfer');
@@ -116,9 +123,7 @@ classdef dynamo < matlab.mixin.Copyable
                         error('Initial and final states should be unitary operators.')
                     end
                 end
-
-                sys.hilbert_representation(initial, final, H_drift, H_ctrl);
-        
+                
                 if strcmp(extra_str, 'phase')
                     out = strcat(out, ' (with global phase (NOTE: unphysical!))');
                     config.error_func = @error_real;
@@ -126,51 +131,48 @@ classdef dynamo < matlab.mixin.Copyable
                     out = strcat(out, ' (ignoring global phase)');
                     config.error_func = @error_abs;
                 end
-        
+                config.f_max = 1;
+                config.gradient_func = @gradient_g_exact;
+                
               otherwise
                 error('Unknown task.')
             end
             out = strcat(out, ' in a closed system.\n');
-            
-            % global maximum of the quality function f_max
-            config.f_max = sqrt(norm2(sys.X_initial) / norm2(sys.X_final));
 
-            % the generator is always Hermitian and thus normal => use exact gradient
-            config.gradient_func = @gradient_g_exact;
 
-    
           case {'sb'}
             %% Open system S with bath B
+            % The generator isn't usually normal, so we cannot use the exact gradient method
+
             switch task_str
               case 'state'
                 out = strcat(out, ' quantum state transfer');
                 sys.vec_representation(initial, final, H_drift, L_drift, H_ctrl);
 
               case 'gate'
-                out = strcat(out, ' quantum map');
+                out = strcat(out, ' quantum gate');
                 if any(input_dim == 1)
-                    error('Initial and final states should be operators.')
+                    error('Initial and final states should be unitary operators.')
                 end
                 sys.vec_gate_representation(initial, final, H_drift, L_drift, H_ctrl);
         
               otherwise
+                % TODO arbitrary quantum maps
                 error('Unknown task.')
             end
 
-            % The generator isn't usually normal, so we cannot use the exact gradient method
             if strcmp(extra_str, 'overlap')
                 % overlap error function
                 % NOTE simpler error function and gradient, but final state needs to be pure
-                % TODO gates?
+                % TODO should not be used with gate task
                 out = strcat(out, ' (overlap)');
                 config.error_func = @error_real;
                 config.gradient_func = @gradient_g_1st_order;
                 config.f_max = 1;
             else
-                % distance error function
+                % full distance error function
                 config.error_func = @error_open;
                 config.gradient_func = @gradient_open_1st_order;
-                config.L_is_propagator = true; % L: full reverse propagator
             end
             out = strcat(out, ' in an open system under Markovian noise.\n');
 
@@ -210,16 +212,24 @@ classdef dynamo < matlab.mixin.Copyable
 
     function cache_init(self)
     % Set up cache after the number of time slots changes.
-        
     % This is where all the bad code went.
         
-        if self.config.L_is_propagator
+        % error_open need a full reverse propagator.
+        if isequal(self.config.error_func, @error_open)
             L_end = eye(length(self.system.X_final)); % L: full reverse propagator
         else
             L_end = self.system.X_final'; % L: X_final' propagated backwards
         end
 
-        self.cache = cache(self.seq.n_timeslots(), self.system.X_initial, L_end, isequal(self.config.gradient_func, @gradient_g_exact));
+        % exact gradient? we need the eigendecomposition data.
+        use_eig = false;
+        if isequal(self.config.gradient_func, @gradient_g_exact) || ...
+                isequal(self.config.gradient_func, @gradient_g_mixed_exact)
+            use_eig = true;
+        end
+
+        % UL_hack: mixed states in a closed system
+        self.cache = cache(self.seq.n_timeslots(), self.system.X_initial, L_end, use_eig, self.config.UL_hack);
     end
 
 
@@ -338,12 +348,10 @@ classdef dynamo < matlab.mixin.Copyable
     % Returns X(t_k), the controlled system at time t_k.
     % If no k is given, returns the final state X(t_n).
 
-    % TODO maybe suboptimal, should we use L{i} in the open system case?
         if nargin < 2
             k = length(self.cache.H);
         end
-        
-        % U{k} is the system at t = sum(tau(1:(k-1))) = t_{k-1}
+        % U{k+1} is the system at t = sum(tau(1:k)) = t_{k}
         self.cache.U_needed_now(k+1) = true;
         self.cache_refresh();
         ret = self.cache.U{k+1};

@@ -8,7 +8,7 @@ if nargin == 2
     % It isn't any cheaper to compute g and grad_g at once rather than sequentially
     % but since g can be computed using any U and L, it might be
     % cheaper to compute the gradient first...
-    grad_g = self.config.gradient_func(self, control_mask);
+    grad_g = self.gradient(control_mask);
 end
 
 g = self.g_func();
