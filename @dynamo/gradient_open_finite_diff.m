@@ -1,4 +1,4 @@
-function ret = gradient_open_finite_diff(self, t, c, epsilon)
+function ret = gradient_open_finite_diff(self, t, c)
 % Gradient of error_open by finite difference method.
 
 % E_open'(x) = (E_open(x + eps) - E_open(x))/eps
@@ -6,6 +6,7 @@ function ret = gradient_open_finite_diff(self, t, c, epsilon)
 %
 % Uses H{t}, U{t} and L{t+1}.
 
+epsilon = self.config.epsilon;
 if c < 0
     tau_eps = self.seq.tau(t) +self.seq.tau_deriv(t) * epsilon;
     P_epsilon = expm(-tau_eps * self.cache.H{t});

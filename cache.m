@@ -4,33 +4,41 @@ classdef cache < matlab.mixin.Copyable
 % Shai Machnes   2010-2011
 % Ville Bergholm 2011-2012
     
-  properties
+
+  properties (SetAccess = private)
       H  % Generator for a time slice.
       P  % Propagator for a time slice. Roughly P = expm(-dt * H). Computed by calcPfromHfunc.
       U  % Forward propagators. U{k+1} = P{k} * U{k}
          % U{k} is the system at t = sum(tau(1:(k-1))) = t_{k-1}
       L  % Backward propagators. L{k-1} = L{k} * P{k-1};
          % L{k} is the adjoint system at t = sum(tau(1:(k-1))) = t_{k-1}
-      UL_mixed  % special case: mixed states in Hilbert space representation?
       g
-      E
+      H_v  % eigendecomposition data for -dt*H, updated when P is updated
+      H_eig_factor
+  end
+
+  properties (Access = public)
+      H_needed_now  % flags
+      P_needed_now
+      U_needed_now
+      L_needed_now
+      g_needed_now
       
-      H_is_stale
+      E
+      VUh
+  end
+
+  properties (Access = private)
+      H_is_stale  % flags
       P_is_stale
       U_is_stale
       L_is_stale
       g_is_stale
-  
-      H_needed_now
-      P_needed_now
-      U_needed_now
-      L_needed_now
       
       calcPfromHfunc
-      H_v
-      H_eig_factor
+      UL_mixed  % flag: use mixed states in Hilbert space representation?
   end
-    
+
   methods
       function self = cache(n_timeslots, U_start, L_end, use_eig, UL_hack)
       % Set up caching (once we know the number of time slices and U and L endpoints).
@@ -57,13 +65,17 @@ classdef cache < matlab.mixin.Copyable
           % L: X_final' propagated backward, or in open-system tasks, a pure propagator (even though this requires more memory).
           self.L{end} = L_end;
 
+          self.g = NaN;
+          self.E = NaN;
+          
           % Keep track of what needs re-computation if we want a complete update of everything.
           % U{1} and L{end} are never stale and never recomputed.
           self.H_is_stale = true(temp);
           self.P_is_stale = true(temp);
           self.U_is_stale = [false, true(temp)]; % Updates for H via 'control_update' get propagated automatically
           self.L_is_stale = [true(temp), false];
-
+          self.g_is_stale = true;
+          
           % Here we indicate which values we need to have up-to-date
           % The 'needed_now' function looks at everything we need to recompute now, 
           % compared to what in principle is_stale, and (in principle) executes the
@@ -78,10 +90,7 @@ classdef cache < matlab.mixin.Copyable
           self.P_needed_now = false(temp);   
           self.U_needed_now = [false, false(temp)];
           self.L_needed_now = [false(temp), false]; 
-
-          self.g_is_stale = true;
-          self.g = NaN;
-          self.E = NaN;
+          self.g_needed_now = false;
       end
       
       
@@ -122,13 +131,20 @@ classdef cache < matlab.mixin.Copyable
       % It then updates the 'is_stale' to indicate what has been actually
       % computed, and clears the 'needed_now'
       %
-      % Assumption: the inter-dependence of H and U/L updates is taken care of in 'control_update'
-   
-          n_timeslots = length(self.H);
+      % The inter-dependence of H and U/L updates is taken care of in mark_as_stale()
 
+          n_timeslots = length(self.H);
+          
+          % computing g may require additional U and L elements, so check that first
+          g_recompute_now = self.g_needed_now && self.g_is_stale;
+          if g_recompute_now
+              % g can be computed using any slice k \in [1, n+1]: g = trace(L_k * U_k).
+              % Try to figure out which k requires least additional computation.
+              g_k = self.g_setup_recalc();
+          end
+          
           U_recompute_now = self.U_needed_now & self.U_is_stale;
           L_recompute_now = self.L_needed_now & self.L_is_stale;
-
           % To recompute U, you need to start at a cell that is fully recomputed.
           % U{1} and L{n_timeslots+1} are by definition never stale and never recomputed.
           for t=n_timeslots:(-1):2
@@ -178,6 +194,7 @@ classdef cache < matlab.mixin.Copyable
                   self.L{t} = self.P{t}' * self.L{t+1} * self.P{t};
               end
           else
+              % propagate U from left, L from right
               for t=u_idx
                   self.U{t} = self.P{t-1} * self.U{t-1};
               end
@@ -185,7 +202,13 @@ classdef cache < matlab.mixin.Copyable
                   self.L{t} = self.L{t+1} * self.P{t};
               end
           end
-          
+
+          % and finally g
+          if g_recompute_now
+              self.g = trace_matmul(self.L{g_k}, self.U{g_k});
+              self.g_is_stale = false;
+          end
+              
           % Mark what has been actually computed
           temp = [1, n_timeslots];
 
@@ -193,10 +216,12 @@ classdef cache < matlab.mixin.Copyable
           self.P_is_stale(P_recompute_now) = false;
           self.U_is_stale(U_recompute_now) = false;
           self.L_is_stale(L_recompute_now) = false;
+          
           self.H_needed_now = false(temp);
           self.P_needed_now = false(temp);
           self.U_needed_now = [false, false(temp)];
           self.L_needed_now = [false(temp), false];
+          self.g_needed_now = false;
 
           %ret = [sum(H_recompute_now), sum(P_recompute_now), sum(U_recompute_now), sum(L_recompute_now)]
       end

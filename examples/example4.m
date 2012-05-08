@@ -123,8 +123,8 @@ dyn = dynamo('SB state overlap', initial(p), final(p), H_drift, H_ctrl, L_drift)
 dyn.system.set_labels(desc, st_labels, c_labels);
 
 % try the expensive-but-reliable gradient method
-%epsilon = 1e-3;
-%dyn.config.gradient_func = @(s, m) gradient_finite_diff(s, m, epsilon);
+%dyn.config.epsilon = 1e-3;
+%dyn.config.gradient_func = @gradient_open_finite_diff;
 
 
 %% set up controls

@@ -439,7 +439,7 @@ Since $|Y_n|^2$ is constant, this error function is completely equivalent to the
 
 
 \subsubsection{Unitary propagator $\I \to U_f$}
-
+\label{sec:closed-u}
 In this task we wish to generate a unitary gate~$U_f$ up to global
 phase, starting from the identity. $X = U$ is a unitary operator on~$\hilb{H}$, and
 thus $|X|^2 = \tr(U^\dagger U) = \tr(\I) = N$.
@@ -559,9 +559,42 @@ E(X_f, X_n)
 
 In this case we have a system~$S$ coherently coupled to an
 environment~$E$, but are only interested in the state of the system.
-The $S$+$E$ propagators~$P_k$ are unitary.
+The $S$+$E$ propagators~$P_k$ are unitary and thus preserve purity.
+We use $M = \dim \hilb{H}_E$~to denote the dimension of the Hilbert
+space of the environment.
 
-partial distance measures~\cite{kosut_2006}.
+\subsubsection{Unitary propagator $\I \to U_f$}
+
+We wish to generate a unitary gate~$U_f$ within $S$ up to global
+phase, starting from the identity.
+$X = U$ is a unitary operator on~$\hilb{H}_{SE}$, and
+thus $|X|^2 = NM$.
+However, we define $X_f = U_f$, which operates on~$S$ alone.
+Following~\cite{kosut_2006,floether_2012}, we have
+\begin{align}
+\notag
+E_\text{zzz}(X_f, X_n) &= \min_{\Phi \in \text{U}(M)} \frac{1}{2} D(X_f \otimes \Phi, X_n)
+= 1 -\max_{\Phi \in \text{U}(M)} \frac{1}{NM} \re \tr\left((X_f^\dagger \otimes \Phi^\dagger) X_n\right)
+= 1 -\frac{1}{NM} \left\|Q(X_f, X_n)\right\|_{\text{Tr}}\\
+&= 1 -\frac{1}{NM} \tr \sqrt{Q^\dagger Q},
+\end{align}
+where
+\be
+Q(X_f, X_n) := \tr_S\left((X_f^\dagger \otimes \I) X_n\right).
+\ee
+
+The gradient is given by
+\be
+\dd{E_\text{zzz}(X_f, X_n)}{u}
+= -\frac{1}{NM} \re \tr \left(\left(\sqrt{Q^\dagger Q}\right)^{-1} Q^\dagger \dd{Q}{u}\right)
+= -\frac{1}{NM} \re \tr \left(V S^{-1} S U^\dagger \dd{Q}{u}\right),
+\ee
+where we have used the SVD $Q = U S V^\dagger$.
+
+
+Note that when $M = 1$, these expressions reduce to the ones in Sec.~\ref{sec:closed-u},
+with $Q = g$.
+
 
 \subsection{Open system and environment coupled to a bath S+E+B}
 

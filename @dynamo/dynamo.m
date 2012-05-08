@@ -179,8 +179,36 @@ classdef dynamo < matlab.mixin.Copyable
 
           case {'se'}
             %% Closed system S + environment E
-            error('Not implemented yet.')
-  
+            if nargin == 6
+                error('L_drift not used in closed systems.')
+            end
+
+            switch task_str
+              case {'ket', 'state'}
+                error('Not implemented yet.')
+
+              case 'gate'
+                out = strcat(out, ' unitary gate on S');
+                if any(input_dim == 1)
+                    error('Initial and final states should be unitary operators.')
+                end
+
+                M = input_dim(1) / input_dim(2);
+                if floor(M) ~= M
+                    error('Initial state must be a unitary on S+E, final state a unitary on S.');
+                end
+                sys.hilbert_representation(initial, kron(final, eye(M)), H_drift, H_ctrl);
+
+                config.dimS = input_dim(2);
+                config.error_func = @error_partial;
+                config.gradient_func = @gradient_partial_exact;
+                
+              otherwise
+                error('Unknown task.')
+            end
+            out = strcat(out, ' in a closed system S+E.\n');            
+
+
           case {'seb'}
             %% Open system S + environment E with bath B
             error('Not implemented yet.')
@@ -214,7 +242,7 @@ classdef dynamo < matlab.mixin.Copyable
     % Set up cache after the number of time slots changes.
     % This is where all the bad code went.
         
-        % error_open need a full reverse propagator.
+        % error_open needs a full reverse propagator.
         if isequal(self.config.error_func, @error_open)
             L_end = eye(length(self.system.X_final)); % L: full reverse propagator
         else
@@ -223,8 +251,10 @@ classdef dynamo < matlab.mixin.Copyable
 
         % exact gradient? we need the eigendecomposition data.
         use_eig = false;
-        if isequal(self.config.gradient_func, @gradient_g_exact) || ...
-                isequal(self.config.gradient_func, @gradient_g_mixed_exact)
+        temp = self.config.gradient_func;
+        if isequal(temp, @gradient_g_exact)...
+                || isequal(temp, @gradient_g_mixed_exact)...
+                || isequal(temp, @gradient_partial_exact)
             use_eig = true;
         end
 
@@ -318,9 +348,9 @@ classdef dynamo < matlab.mixin.Copyable
         self.cache.P_needed_now(:) = true;
         self.cache.U_needed_now(:) = true;
         self.cache.L_needed_now(:) = true;
-
+        self.cache.g_needed_now    = true;
+        
         self.cache_refresh();
-        self.g_func();
     end
 
 
@@ -328,19 +358,9 @@ classdef dynamo < matlab.mixin.Copyable
     % Computes the auxiliary function g := trace(X_f^\dagger * X(t_n)).
     % Used both for the goal function as well as its gradient.
         
-        if ~self.cache.g_is_stale 
-            ret = self.cache.g;
-            return;
-        end
-
-        % g can be computed using any slice k \in [1, n+1]: g = trace(L_k * U_k).
-        % Try to figure out which k requires least additional computation.
-        k = self.cache.g_setup_recalc();
+        self.cache.g_needed_now = true;
         self.cache_refresh();
-        ret = trace_matmul(self.cache.L{k}, self.cache.U{k});
-
-        self.cache.g = ret;
-        self.cache.g_is_stale = false;
+        ret = self.cache.g;
     end
   
   

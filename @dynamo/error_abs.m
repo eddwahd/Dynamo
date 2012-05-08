@@ -4,6 +4,7 @@ function [err, grad] = error_abs(self, control_mask)
 % If no control_mask is given, computes just the error function.
 % Otherwise also gives the corresponding gradient.
 
+
 if nargin == 2
     % It isn't any cheaper to compute g and grad_g at once rather than sequentially
     % but since g can be computed using any U and L, it might be
