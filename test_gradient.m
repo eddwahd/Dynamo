@@ -19,14 +19,14 @@ mask = d.full_mask(true);
 %d.config.error_func = @error_real;
 d.config.error_func = @error_open;
 
-epsilon = 1e-7;
+d.config.epsilon = 1e-7;
 
 %d.config.gradient_func = @gradient_g_exact;
 %d.config.gradient_func = @gradient_g_1st_order;
-%d.config.gradient_func = @(s, m) gradient_g_finite_diff(s, m, epsilon);
+%d.config.gradient_func = @gradient_g_finite_diff;
 
 %d.config.gradient_func = @gradient_open_1st_order;
-d.config.gradient_func = @(s, m) gradient_open_finite_diff(s, m, epsilon);
+d.config.gradient_func = @gradient_open_finite_diff;
 % TODO explain the O(s) behavior of open_finite_diff
 
 

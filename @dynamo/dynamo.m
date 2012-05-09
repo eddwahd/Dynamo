@@ -26,7 +26,7 @@ classdef dynamo < matlab.mixin.Copyable
   methods (Static)
     function ret = version()
     % Returns the current DYNAMO version.
-        ret = '1.3 alpha13';
+        ret = '1.3 alpha14';
     end
 
 
