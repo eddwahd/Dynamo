@@ -32,6 +32,7 @@
 
 
 % TODO Dynamo vs DYNAMO
+% TODO final vs target, maybe X_n should be X_final
 \begin{document}
 \title{DYNAMO manual}
 \date{\today}
@@ -253,9 +254,9 @@ Closed system S
 \hline
 Closed system SE
 & $\rho_i \to \rho_f$ & H
-& $\rho_i \otimes \rho_E$ & $\rho_f$ & $P(\rho)$ & $E_\text{???}$\\
+& $\rho_i \otimes \rho_E$ & $\rho_f$ & $P(\rho)$ & $E_\text{partial}$\\
 & $U_i \to U_f$ & H
-& $U_i \otimes \I_E$ & $U_f \otimes \I_E$ & $\dim \hilb{H}_S \dim \hilb{H}_E$ & $E_\text{}$\\
+& $U_i \otimes \I_E$ & $U_f \otimes \I_E$ & $\dim \hilb{H}_S \dim \hilb{H}_E$ & $E_\text{tr}$\\
 \hline
 Open system S
 & $\rho_i \to \rho_f$ & L & $\cvec(\rho_i)$ & $\cvec(\rho_f)$ & $P(\rho)$ & $E_\text{full}$\\
@@ -264,6 +265,9 @@ Open system S
 & $F_i \to F_f$ & L & $F_i$ & $F_f$ & & $E_\text{full}$\\
 \hline
 Open system SE
+& $\rho_i \to \rho_f$ & L
+& $\cvec(\rho_i \otimes \rho_E)$ & $\cvec(\rho_f)$ & $P(\rho)$ & $E_\text{partial}$\\
+& $U_i \to U_f$ & L
 \end{tabular}
 \caption{Summary of the optimization tasks.}
 \label{table:tasks}
@@ -272,25 +276,34 @@ Open system SE
 
 \subsubsection*{Error functions}
 
+
+
 \begin{align}
 E_\text{real}(A, B) &:= 1 -\frac{1}{|A|^2} \re g(A, B),\\
 E_\text{abs}(A, B) &:= 1 -\frac{1}{|A|^2} |g(A, B)|,\\
-E_\text{full}(A, B) &:= 1 +\frac{|B|^2}{|A|^2} -\frac{2}{|A|^2} \re \tr(A^\dagger B),\\
-E_\text{partial}(A, B) &:= E_\text{full}(A, \tr_E(B)),
+E_\text{full}(A, B) &:= \frac{1}{2}\left(1 +\frac{|B|^2}{|A|^2}\right) -\frac{1}{|A|^2} \re \tr(A^\dagger B),\\
+E_\text{partial}(A, B) &:= E_\text{full}(A, \tr_E(B)),\\
+E_\text{tr}(A, B) &:= 1 -\frac{1}{|A|^2} \left\|Q(A, B)\right\|_{\tr}
+= 1 -\frac{1}{|A|^2} \tr \sqrt{Q^\dagger Q},
 \end{align}
-where the auxiliary function~$g(A, B) := \tr(A^\dagger B)$.
+with the auxiliary functions
+\begin{align}
+g(A, B) &:= \tr(A^\dagger B),\\
+Q(A, B) &:= \tr_S\left(A^\dagger B\right).
+\end{align}
+
 All of these functions and their gradients can be efficiently computed
 using the $U$s and $\Lambda$s
-for any $j, k$:
+for any $j, k \in \{0, \ldots, n\}$:
 \begin{align}
 g(X_f, X_n) &= \tr(X_f^\dagger \Lambda_k U_k X_i)
 = \tr(\Lambda'_{k+1} U'_{k+1}),\\
 g(Y_f, Y_n) &= \tr(\Lambda_k^\dagger Y_f^\dagger \Lambda_k U_k Y_i U_k^\dagger)
 = \tr(\Lambda'_{k+1} U'_{k+1}),\\
-E_\text{full}(X_f, X_n) &= 1 +\frac{|\Lambda_j U_j X_i|^2}{|X_f|^2} -\frac{2}{|X_f|^2} \re \tr(X_f^\dagger \Lambda_k U_k X_i)
-= 1 +\frac{|\Lambda'_{j+1} U'_{j+1}|^2}{|X_f|^2} -\frac{2}{|X_f|^2} \re \tr(X_f^\dagger \Lambda'_{k+1} U'_{k+1}),\\
-E_\text{partial}(\rho_f, X_n)
-&= 1 +\frac{|\tr_E(\Lambda'_{j+1} U'_{j+1})|^2}{|\rho_f|^2} -\frac{2}{|\rho_f|^2} \re \tr(\rho_f^\dagger \tr_E(\Lambda'_{k+1} U'_{k+1})).
+E_\text{full}(X_f, X_n) &= \frac{1}{2}\left(1 +\frac{|\Lambda_j U_j X_i|^2}{|X_f|^2}\right) -\frac{1}{|X_f|^2} \re \tr(X_f^\dagger \Lambda_k U_k X_i)
+= \frac{1}{2}\left(1 +\frac{|\Lambda'_{j+1} U'_{j+1}|^2}{|X_f|^2}\right) -\frac{1}{|X_f|^2} \re \tr(X_f^\dagger \Lambda'_{k+1} U'_{k+1}),\\
+E_\text{partial}(X_f, X_n)
+&= \frac{1}{2}\left(1 +\frac{|\tr_E(\Lambda'_{j+1} U'_{j+1})|^2}{|X_f|^2}\right) -\frac{1}{|X_f|^2} \re \tr(X_f^\dagger \tr_E(\Lambda'_{k+1} U'_{k+1})).
 \end{align}
 
 
@@ -307,14 +320,25 @@ for the special case of mixed state transfer in a closed system.}
 \dd{g(Y_f, Y_n)}{u} &= 2 \re \tr\left(\Lambda_k^\dagger Y_f^\dagger \Lambda_k \left(\dd{P_k}{u}\right) U_{k-1} Y_i U_{k-1}^\dagger P_k^\dagger \right)
 = 2 \re \tr\left(\Lambda'_{k+1} \left(\dd{P_k}{u}\right) U'_{k} P_k^\dagger \right), \quad \text{and}\\
 \dd{E_\text{full}(X_f, X_n)}{u}
-&= \frac{2}{|X_f|^2} \re \tr\left((X_n-X_f)^\dagger \dd{X_n}{u}\right)
-= \frac{2}{|X_f|^2} \re \tr\left((\Lambda_k U_k X_i -X_f)^\dagger  \Lambda_{k} \left(\dd{P_k}{u}\right) U_{k-1} X_i \right)\\
-&= \frac{2}{|X_f|^2} \re \tr\left((\Lambda'_{k+1} U'_{k+1} -X_f)^\dagger  \Lambda'_{k+1} \left(\dd{P_k}{u}\right) U'_{k} \right),\\
-\dd{E_\text{partial}(\rho_f, X_n)}{u}
-&= \frac{2}{|\rho_f|^2} \re \tr\left((\tr_E(\Lambda'_{k+1} U'_{k+1}) -\rho_f)^\dagger  \tr_E(\Lambda'_{k+1} \left(\dd{P_k}{u}\right) U'_{k}) \right).
+&= \frac{1}{|X_f|^2} \re \tr\left((X_n-X_f)^\dagger \dd{X_n}{u}\right)
+= \frac{1}{|X_f|^2} \re \tr\left((\Lambda_k U_k X_i -X_f)^\dagger  \Lambda_{k} \left(\dd{P_k}{u}\right) U_{k-1} X_i \right)\\
+&= \frac{1}{|X_f|^2} \re \tr\left((\Lambda'_{k+1} U'_{k+1} -X_f)^\dagger  \Lambda'_{k+1} \left(\dd{P_k}{u}\right) U'_{k} \right),\\
+\dd{E_\text{partial}(X_f, X_n)}{u}
+&= \frac{1}{|X_f|^2} \re \tr\left((\tr_E(\Lambda'_{k+1} U'_{k+1}) -X_f)^\dagger  \tr_E(\Lambda'_{k+1} \left(\dd{P_k}{u}\right) U'_{k}) \right).
 \end{align}
 The form of these expressions lead us to cache slightly different objects with
 different error functions to speed up the computation, presented in table~\ref{table:UL}.
+
+
+The gradient is given by
+\be
+\dd{E_\text{tr}(X_f, X_n)}{u}
+= -\frac{1}{|X_f|^2} \re \tr \left(\left(\sqrt{Q^\dagger Q}\right)^{-1} Q^\dagger \dd{Q}{u}\right)
+= -\frac{1}{|X_f|^2} \re \tr \left(V S^{-1} S U^\dagger \dd{Q}{u}\right),
+\ee
+where we have used the SVD $Q = U S V^\dagger$.
+
+
 
 \begin{table}
 \begin{tabular}{l|c|c}
@@ -322,7 +346,7 @@ error function & $U'_{k+1}$ = $X_k$ & $\Lambda'_{k+1}$\\
 \hline
 $E_\text{abs}$, $E_\text{real}$ & $U_k X_i$ & $X_f^\dagger \Lambda_k$\\
 $E_\text{mixed}$ & $U_k Y_i U_k^\dagger$ & $\Lambda_k^\dagger Y_f^\dagger \Lambda_k$\\
-$E_\text{full}$ & $U_k X_i$ & $\Lambda_k$
+$E_\text{full}$, $E_\text{partial}$ & $U_k X_i$ & $\Lambda_k$
 \end{tabular}
 \caption{Definitions of the cached objects $U'$ and $\Lambda'$ used in the MATLAB
   code. $k \in \{0, \ldots, n\}$.}
@@ -520,19 +544,18 @@ E(X_f, X_n)
 
 In this case we have in addition to the system~$S$ an environment~$E$.
 We want to transform the state~$\rho_i$ on $S$ into~$\rho_f$.
-$X$ is a state operator on~$\hilb{H}_{SE}$, and
-the initial state is assumed to be of the form~$X_i = \rho_i \otimes
-\rho_E$.
-We also define~$X_f = \rho_f \otimes \I_E$.
-Again, $|X|^2 = P(\rho_{SE})$.
+$Y$ is a state operator on~$\hilb{H}_{SE}$, and
+the initial state is assumed to be of the
+form~$Y_i = \rho_i \otimes \rho_E$.
+We also define~$Y_f = \rho_f$.
+Again, $|Y|^2 = P(\rho_{SE})$.
 \be
-E(\rho_f, X_n)
-:= \frac{1}{2} D(\rho_f, \tr_E(X_n))
-= \frac{1}{2}\left(1 +\frac{|\tr_E(X_n)|^2}{P(\rho_f)}\right)
--\frac{1}{P(\rho_f)} \re \tr(\rho_f^\dagger \tr_E(X_n))
-= \frac{1}{2}\left(1 +\frac{|\tr_E(X_n)|^2}{P(\rho_f)}\right) -\frac{1}{P(\rho_f)} \re \tr(X_f^\dagger X_n)
+E(\rho_f, Y_n)
+:= \frac{1}{2} D(\rho_f, \tr_E(Y_n))
+= \frac{1}{2}\left(1 +\frac{|\tr_E(Y_n)|^2}{|Y_f|^2)}\right) -\frac{1}{|Y_f|^2} \re \tr(\rho_f^\dagger \tr_E(Y_n))
+= E_\text{partial}(Y_f, Y_n).
 \ee
-TODO
+
 
 \subsubsection{Partial unitary propagator $\I \to U_f$}
 
@@ -545,30 +568,16 @@ and $X_f = U_f \otimes \I_E$.
 Following~\cite{kosut_2006,floether_2012}, we have
 \begin{align}
 \notag
-E_\text{zzz}(U_f, X_n)
+E(U_f, X_n)
 &:= \min_{\Phi \in \text{U}(M)} \frac{1}{2} D(U_f \otimes \Phi, X_n)
-= 1 -\max_{\Phi \in \text{U}(M)} \frac{1}{|X_f|^2} \re \tr\left((U_f^\dagger \otimes \Phi^\dagger) X_n\right)
-= 1 -\frac{1}{|X_f|^2} \left\|Q(U_f, X_n)\right\|_{\tr}\\
-&= 1 -\frac{1}{|X_f|^2} \tr \sqrt{Q^\dagger Q},
+= 1 -\max_{\Phi \in \text{U}(M)} \frac{1}{|X_f|^2} \re \tr\left((U_f^\dagger \otimes \Phi^\dagger) X_n\right)\\
+&= 1 -\frac{1}{|X_f|^2} \left\|Q(X_f, X_n)\right\|_{\tr}
+%= 1 -\frac{1}{|X_f|^2} \tr \sqrt{Q^\dagger Q}
+= E_\text{tr}(X_f, X_n).
 \end{align}
-where
-\be
-Q(U_f, X_n)
-:= \tr_S\left((U_f^\dagger \otimes \I_E) X_n\right)
-= \tr_S\left(X_f^\dagger X_n\right).
-\ee
 Since the trace norm $\|\cdot\|_{\tr}$ is unitarily invariant, the
 choice of $U_E$ does not matter and can be taken to be~$\I_E$.
 % NOTE again we can do $U_i \to U_f$, and like before they will combine around the trace.
-
-The gradient is given by
-\be
-\dd{E_\text{zzz}(X_f, X_n)}{u}
-= -\frac{1}{|X_f|^2} \re \tr \left(\left(\sqrt{Q^\dagger Q}\right)^{-1} Q^\dagger \dd{Q}{u}\right)
-= -\frac{1}{|X_f|^2} \re \tr \left(V S^{-1} S U^\dagger \dd{Q}{u}\right),
-\ee
-where we have used the SVD $Q = U S V^\dagger$.
-
 
 Note that when $\dim \hilb{H}_E = 1$, these expressions reduce to the ones in Sec.~\ref{sec:closed-u},
 with $Q = g$.
@@ -616,8 +625,8 @@ $|X|^2 = \tr(\rho^2) = P(\rho)$.
 The correct error function is
 \be
 E(X_f, X_n)
-:= D(X_f, X_n)
-= 1 +\frac{|X_n|^2}{|X_f|^2} -\frac{2}{|X_f|^2} \re \tr(X_f^\dagger X_n)
+:= \frac{1}{2} D(X_f, X_n)
+%= \frac{1}{2}\left(1 +\frac{|X_n|^2}{|X_f|^2}\right) -\frac{1}{|X_f|^2} \re \tr(X_f^\dagger X_n)
 = E_\text{full}(X_f, X_n).
 \ee
 
@@ -636,78 +645,40 @@ E(X_f, X_n)
 
 \subsubsection{General quantum map $\I \to F_f$}
 
-$X$ is a general quantum map in the vec representation on Liouville space.
+$X$ is a general quantum map in the vec-representation on Liouville space.
 A unitary target map~$U_f$ would be given by
 $X_f = \hat{U_f}$, which yields $|X_f|^2 = (\dim \hilb{H})^2$.
 However, the norm $|X_n|^2$ of the propagated operator
 is not necessarily constant. The error function is again
 \be
 E(X_f, X_n)
-:= D(X_f, X_n)
-%= 1 +\frac{|X_n|^2}{|X_f|^2} -\frac{2}{|X_f|^2} \re \tr(X_f^\dagger X_n)
+:= \frac{1}{2} D(X_f, X_n)
 = E_\text{full}(X_f, X_n).
 \ee
 
 
 \subsubsection{Partial state transfer $\rho_i \to \rho_f$}
 
-%In this case we have in addition to the system~$S$ an environment~$E$.
 We want to transform the state~$\rho_i$ on $S$ into~$\rho_f$.
-$X~=~\cvec{\rho}$ is a vectorized state operator on~$\hilb{H}_{SE}$, and
-the initial state is assumed to be of the form~$X_i = \rho_i \otimes \rho_E$.
-%We also define~$X_f = \rho_f \otimes \I_E$.
+$X$ is the vec-representation of a state operator on~$\hilb{H}_{SE}$.
 Again, $|X|^2 = P(\rho_{SE})$.
+The initial state is assumed to be of tensor product form.
+We define $X_i = \cvec(\rho_i \otimes \rho_E)$,
+and~$X_f = \rho_f$.
+The error is obtained using a partial trace over~$E$:
 \be
 E(\rho_f, X_n)
 := \frac{1}{2} D(\rho_f, \tr_E(X_n))
-= \frac{1}{2}\left(1 +\frac{|\tr_E(X_n)|^2}{P(\rho_f)}\right)
--\frac{1}{P(\rho_f)} \re \tr(\rho_f^\dagger \tr_E(X_n))
-= E_\text{partial}
-%= \frac{1}{2}\left(1 +\frac{|\tr_E(X_n)|^2}{P(\rho_f)}\right) -\frac{1}{P(\rho_f)} \re \tr(X_f^\dagger X_n)
+= \frac{1}{2}\left(1 +\frac{|\tr_E(X_n)|^2}{|X_f|^2}\right)
+-\frac{1}{|X_f|^2} \re \tr(\rho_f^\dagger \tr_E(X_n))
+= E_\text{partial}(X_f, X_n).
 \ee
-TODO
+
 
 
 \subsubsection{Partial unitary propagator $\I \to U_f$}
 
 TODO
-
-We wish to generate a unitary gate~$U_f$ operating on $S$ up to global
-phase, starting from the identity.
-$X$ is a unitary operator on~$\hilb{H}_{SE}$, and
-thus $|X|^2 = \dim \hilb{H}_S \dim \hilb{H}_E$.
-Define $X_i = \I_S \otimes U_E$, with $U_E$ undefined at this point,
-and $X_f = U_f \otimes \I_E$.
-Following~\cite{kosut_2006,floether_2012}, we have
-\begin{align}
-\notag
-E_\text{zzz}(U_f, X_n)
-&:= \min_{\Phi \in \text{U}(M)} \frac{1}{2} D(U_f \otimes \Phi, X_n)
-= 1 -\max_{\Phi \in \text{U}(M)} \frac{1}{|X_f|^2} \re \tr\left((U_f^\dagger \otimes \Phi^\dagger) X_n\right)
-= 1 -\frac{1}{|X_f|^2} \left\|Q(U_f, X_n)\right\|_{\tr}\\
-&= 1 -\frac{1}{|X_f|^2} \tr \sqrt{Q^\dagger Q},
-\end{align}
-where
-\be
-Q(U_f, X_n)
-:= \tr_S\left((U_f^\dagger \otimes \I_E) X_n\right)
-= \tr_S\left(X_f^\dagger X_n\right).
-\ee
-Since the trace norm $\|\cdot\|_{\tr}$ is unitarily invariant, the
-choice of $U_E$ does not matter and can be taken to be~$\I_E$.
-% NOTE again we can do $U_i \to U_f$, and like before they will combine around the trace.
-
-The gradient is given by
-\be
-\dd{E_\text{zzz}(X_f, X_n)}{u}
-= -\frac{1}{|X_f|^2} \re \tr \left(\left(\sqrt{Q^\dagger Q}\right)^{-1} Q^\dagger \dd{Q}{u}\right)
-= -\frac{1}{|X_f|^2} \re \tr \left(V S^{-1} S U^\dagger \dd{Q}{u}\right),
-\ee
-where we have used the SVD $Q = U S V^\dagger$.
-
-
-Note that when $\dim \hilb{H}_E = 1$, these expressions reduce to the ones in Sec.~\ref{sec:closed-u},
-with $Q = g$.
 
 
 
