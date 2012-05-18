@@ -1,4 +1,4 @@
-function [err, grad] = error_partial(self, control_mask)
+function [err, grad] = error_tr(self, control_mask)
 % Error function and its gradient for closed S+E
 %
 % If no control_mask is given, computes just the error function.
@@ -8,7 +8,7 @@ function [err, grad] = error_partial(self, control_mask)
   k = self.cache.g_setup_recalc();
   self.cache_refresh();
   temp = self.cache.L{k} * self.cache.U{k};
-  Q = partial_trace(temp, self.config.dimS);
+  Q = partial_trace(temp, self.config.dimS, 1);
 
   % trace norm
   [U, S, V] = svd(Q);

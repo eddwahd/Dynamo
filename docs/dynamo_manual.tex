@@ -266,7 +266,7 @@ Open system S
 \hline
 Open system SE
 & $\rho_i \to \rho_f$ & L
-& $\cvec(\rho_i \otimes \rho_E)$ & $\cvec(\rho_f)$ & $P(\rho)$ & $E_\text{partial}$\\
+& $\cvec(\rho_i \otimes \rho_E)$ & $\rho_f$ & $P(\rho)$ & $E_\text{partial}$\\
 & $U_i \to U_f$ & L
 \end{tabular}
 \caption{Summary of the optimization tasks.}
@@ -326,8 +326,8 @@ for the special case of mixed state transfer in a closed system.}
 \dd{E_\text{partial}(X_f, X_n)}{u}
 &= \frac{1}{|X_f|^2} \re \tr\left((\tr_E(\Lambda'_{k+1} U'_{k+1}) -X_f)^\dagger  \tr_E(\Lambda'_{k+1} \left(\dd{P_k}{u}\right) U'_{k}) \right).
 \end{align}
-The form of these expressions lead us to cache slightly different objects with
-different error functions to speed up the computation, presented in table~\ref{table:UL}.
+The form of these expressions leads us to cache slightly different objects with
+each error function to speed up the computation, presented in table~\ref{table:UL}.
 
 
 The gradient is given by

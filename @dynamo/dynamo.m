@@ -97,8 +97,6 @@ classdef dynamo < matlab.mixin.Copyable
             end
             % the generator is always Hermitian and thus normal => use exact gradient
 
-            sys.hilbert_representation(initial, final, H_drift, H_ctrl);
-
             switch task_str
               case 'state'
                 % TEST more efficient Hilbert space implementation
@@ -107,7 +105,6 @@ classdef dynamo < matlab.mixin.Copyable
                     error('Initial and final states should be state operators.')
                 end
                 config.error_func = @error_real;
-                config.f_max = 0.5 * (1 + norm2(sys.X_initial) / norm2(sys.X_final));
                 config.gradient_func = @gradient_g_mixed_exact;
                 config.UL_hack = true;
                 
@@ -131,88 +128,98 @@ classdef dynamo < matlab.mixin.Copyable
                     out = strcat(out, ' (ignoring global phase)');
                     config.error_func = @error_abs;
                 end
-                config.f_max = 1;
+                %config.f_max = 1;
                 config.gradient_func = @gradient_g_exact;
+
+
+              %% system S + environment E
+              case 'gate_partial'
+                out = strcat(out, ' partial unitary gate (on S)');
+                if any(input_dim == 1)
+                    error('Initial and final states should be unitary operators.')
+                end
+
+                dimE = input_dim(1) / input_dim(2);
+                if floor(dimE) ~= dimE
+                    error('Initial state must be a unitary on S+E, final state a unitary on S.');
+                end
+                final = kron(final, eye(dimE));
+                config.dimS = input_dim(2);
+                config.error_func = @error_tr;
+                config.gradient_func = @gradient_tr_exact;
+                
+              case 'state_partial'
+                error('Not implemented yet.')
                 
               otherwise
                 error('Unknown task.')
             end
+            
+            sys.hilbert_representation(initial, final, H_drift, H_ctrl);
+            config.f_max = 0.5 * (1 + norm2(sys.X_initial) / norm2(sys.X_final));
             out = strcat(out, ' in a closed system.\n');
 
-
+            
           case {'sb'}
             %% Open system S with bath B
             % The generator isn't usually normal, so we cannot use the exact gradient method
 
             switch task_str
               case 'state'
-                out = strcat(out, ' quantum state transfer');
+                out = strcat(out, ' state transfer');
                 sys.vec_representation(initial, final, H_drift, L_drift, H_ctrl);
-
+                if strcmp(extra_str, 'overlap')
+                    % overlap error function
+                    % NOTE simpler error function and gradient, but final state needs to be pure
+                    out = strcat(out, ' (overlap)');
+                    config.error_func = @error_real;
+                    config.gradient_func = @gradient_g_1st_order;
+                    config.f_max = 1;
+                else
+                    % full distance error function
+                    config.dimS = 0; % HACK
+                    config.error_func = @error_full;
+                    config.gradient_func = @gradient_full_1st_order;
+                end
+                
               case 'gate'
                 out = strcat(out, ' quantum gate');
                 if any(input_dim == 1)
                     error('Initial and final states should be unitary operators.')
                 end
                 sys.vec_gate_representation(initial, final, H_drift, L_drift, H_ctrl);
-        
+                config.dimS = 0; % HACK
+                config.error_func = @error_full;
+                config.gradient_func = @gradient_full_1st_order;
+
+
+              %% system S + environment E
+              case 'state_partial'
+                out = strcat(out, ' partial state transfer (on S)');
+                if any(input_dim == 1)
+                    error('Initial and final states should be state operators.')
+                end
+                dimE = input_dim(1) / input_dim(2);
+                if floor(dimE) ~= dimE
+                    error('Initial state must be a state operator on S+E, final state a state operator on S.');
+                end
+                sys.vec_representation(initial, final, H_drift, L_drift, H_ctrl);
+                sys.X_final = final; % HACK
+                config.dimS = input_dim(2);
+                config.error_func = @error_full;
+                config.gradient_func = @gradient_full_1st_order;
+                
+              case 'gate_partial'
+                error('Not implemented yet.')
+
               otherwise
                 % TODO arbitrary quantum maps
                 error('Unknown task.')
             end
-
-            if strcmp(extra_str, 'overlap')
-                % overlap error function
-                % NOTE simpler error function and gradient, but final state needs to be pure
-                % TODO should not be used with gate task
-                out = strcat(out, ' (overlap)');
-                config.error_func = @error_real;
-                config.gradient_func = @gradient_g_1st_order;
-                config.f_max = 1;
-            else
-                % full distance error function
-                config.error_func = @error_open;
-                config.gradient_func = @gradient_open_1st_order;
-            end
+            
             out = strcat(out, ' in an open system under Markovian noise.\n');
 
 
-          case {'se'}
-            %% Closed system S + environment E
-            if nargin == 6
-                error('L_drift not used in closed systems.')
-            end
-
-            switch task_str
-              case {'ket', 'state'}
-                error('Not implemented yet.')
-
-              case 'gate'
-                out = strcat(out, ' unitary gate on S');
-                if any(input_dim == 1)
-                    error('Initial and final states should be unitary operators.')
-                end
-
-                M = input_dim(1) / input_dim(2);
-                if floor(M) ~= M
-                    error('Initial state must be a unitary on S+E, final state a unitary on S.');
-                end
-                sys.hilbert_representation(initial, kron(final, eye(M)), H_drift, H_ctrl);
-
-                config.dimS = input_dim(2);
-                config.error_func = @error_partial;
-                config.gradient_func = @gradient_partial_exact;
-                
-              otherwise
-                error('Unknown task.')
-            end
-            out = strcat(out, ' in a closed system S+E.\n');            
-
-
-          case {'seb'}
-            %% Open system S + environment E with bath B
-            error('Not implemented yet.')
-    
           otherwise
             error('Unknown system specification.')
         end
@@ -222,7 +229,7 @@ classdef dynamo < matlab.mixin.Copyable
         else
             fprintf('Hilbert');
         end
-        fprintf(' space dimension: %d\n\n', length(sys.X_final));
+        fprintf(' space dimension: %d\n\n', length(sys.X_initial));
           
         % Calculate the squared norm |X_final|^2 to scale the fidelities with.
         % We use the Hilbert-Schmidt inner product (and the induced Frobenius norm) throughout the code.
@@ -242,9 +249,10 @@ classdef dynamo < matlab.mixin.Copyable
     % Set up cache after the number of time slots changes.
     % This is where all the bad code went.
         
-        % error_open needs a full reverse propagator.
-        if isequal(self.config.error_func, @error_open)
-            L_end = eye(length(self.system.X_final)); % L: full reverse propagator
+        % some error functions need a full reverse propagator.
+        temp = self.config.error_func;
+        if isequal(temp, @error_full)
+            L_end = eye(length(self.system.X_initial)); % L: full reverse propagator
         else
             L_end = self.system.X_final'; % L: X_final' propagated backwards
         end
@@ -254,7 +262,7 @@ classdef dynamo < matlab.mixin.Copyable
         temp = self.config.gradient_func;
         if isequal(temp, @gradient_g_exact)...
                 || isequal(temp, @gradient_g_mixed_exact)...
-                || isequal(temp, @gradient_partial_exact)
+                || isequal(temp, @gradient_tr_exact)
             use_eig = true;
         end
 
@@ -368,6 +376,7 @@ classdef dynamo < matlab.mixin.Copyable
     % Returns X(t_k), the controlled system at time t_k.
     % If no k is given, returns the final state X(t_n).
 
+    % TODO if cache.L is a full reverse propagator we could use it
         if nargin < 2
             k = length(self.cache.H);
         end

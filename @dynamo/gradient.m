@@ -10,12 +10,13 @@ self.cache.L_needed_now([false; slot_mask]) = true;  % L_{slot+1}
 
 % TODO FIXME kind of a hack, the gradient funcs themselves should keep this information
 temp = self.config.gradient_func;
-if isequal(temp, @gradient_g_1st_order) || isequal(temp, @gradient_open_1st_order)
+if isequal(temp, @gradient_g_1st_order)...
+        || isequal(temp, @gradient_full_1st_order)
     self.cache.U_needed_now([false; slot_mask]) = true;  % U_{slot+1}
 
 elseif isequal(temp, @gradient_g_exact)...
         || isequal(temp, @gradient_g_mixed_exact)...
-        || isequal(temp, @gradient_partial_exact)
+        || isequal(temp, @gradient_tr_exact)
     % taus and other controls require different things
     tau_slot_mask = control_mask(:, end);
     c_slot_mask   = any(control_mask(:, 1:end-1), 2);
@@ -29,7 +30,7 @@ elseif isequal(temp, @gradient_g_exact)...
     end
     self.cache.U_needed_now(temp) = true;        % U_{c_slot},  U_{tau_slot+1}
     
-elseif isequal(temp, @gradient_g_finite_diff) || isequal(temp, @gradient_open_finite_diff)
+elseif isequal(temp, @gradient_g_finite_diff) || isequal(temp, @gradient_full_finite_diff)
     self.cache.U_needed_now([slot_mask; false]) = true;  % U_{slot}
 
     if isequal(temp, @gradient_g_finite_diff)

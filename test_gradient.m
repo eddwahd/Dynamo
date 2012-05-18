@@ -17,7 +17,8 @@ mask = d.full_mask(true);
 
 %d.config.error_func = @error_abs;
 %d.config.error_func = @error_real;
-d.config.error_func = @error_open;
+d.config.error_func = @error_full;
+d.config.dimS = length(d.system.X_initial);
 
 d.config.epsilon = 1e-7;
 
@@ -25,9 +26,9 @@ d.config.epsilon = 1e-7;
 %d.config.gradient_func = @gradient_g_1st_order;
 %d.config.gradient_func = @gradient_g_finite_diff;
 
-%d.config.gradient_func = @gradient_open_1st_order;
-d.config.gradient_func = @gradient_open_finite_diff;
-% TODO explain the O(s) behavior of open_finite_diff
+%d.config.gradient_func = @gradient_full_1st_order;
+d.config.gradient_func = @gradient_full_finite_diff;
+% TODO explain the O(s) behavior of gradient_full_finite_diff
 
 
 %% test the accuracy
@@ -64,4 +65,5 @@ figure();
 loglog(s, diff, 'b-o', s, s.^2, 'r', s, s, 'g');
 xlabel('|\Delta u|')
 ylabel('|gradient error|')
+legend('gradient error', 'quadratic', 'linear')
 end

@@ -1,7 +1,7 @@
-function ret = gradient_open_finite_diff(self, t, c)
-% Gradient of error_open by finite difference method.
+function ret = gradient_full_finite_diff(self, t, c)
+% Gradient of error_full by finite difference method.
 
-% E_open'(x) = (E_open(x + eps) - E_open(x))/eps
+% E'(x) = (E(x + eps) - E(x))/eps
 % Trivial and relatively slow, but a good reference point.
 %
 % Uses H{t}, U{t} and L{t+1}.
@@ -15,6 +15,7 @@ else
     P_epsilon = expm(-self.seq.tau(t) * H_eps);
 end
 
-X_n = self.cache.L{t+1} * (P_epsilon * self.cache.U{t});
-E_at_eps_point = normalized_distance(self.system.X_final, X_n, self.system.norm2);
+X_S = partial_trace(self.cache.L{t+1} * (P_epsilon * self.cache.U{t}), self.config.dimS, 2);
+
+E_at_eps_point = 0.5 * normalized_distance(self.system.X_final, X_S, self.system.norm2);
 ret = (E_at_eps_point - self.cache.E) / epsilon;
