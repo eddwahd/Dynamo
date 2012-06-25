@@ -23,9 +23,11 @@ function [C, labels] = control_ops(dim, ctrl)
 %
 %        C = control_ops([2 2 2], 'xy,3d')
 %
-%    generates control operators for a three-qubit system: X and Y
-%    rotations for every qubit, plus dephasing for the third one.
+%    returns a total of 7 control operators for a three-qubit system:
+%    X and Y rotations for every qubit, plus dephasing for the third one.
 
+% TODO Explain normalization, non-qubits...
+    
 % Ville Bergholm 2011-2012
 
 
@@ -34,7 +36,6 @@ X = [0 1; 1 0];
 Y = [0 -1i; 1i 0];
 Z = [1 0; 0 -1];
 SP = [0 1; 0 0];
-N = 2*[0 0; 0 1]; % TODO normalization, non-qubits...
 
 % number of subsystems
 n = length(dim);
@@ -86,18 +87,25 @@ while ~isempty(token)
                 C{end+1} = superop_lindblad({mkron(Ia, SP, Ib)});
                 labels{end+1} = sprintf('A_%d', k);
 
+              case 'b'
+                if dim(k) ~= 2
+                    error('Bit flip not yet defined for non-qubits.')
+                end
+                C{end+1} = superop_lindblad({mkron(Ia, X/2, Ib)});
+                labels{end+1} = sprintf('Dx_%d', k);                
+                
               case 'd'
                 if dim(k) ~= 2
                     error('Dephasing not yet defined for non-qubits.')
                 end
-                C{end+1} = superop_lindblad({mkron(Ia, N, Ib)});
-                labels{end+1} = sprintf('D_%d', k);
+                C{end+1} = superop_lindblad({mkron(Ia, Z/2, Ib)});
+                labels{end+1} = sprintf('Dz_%d', k);
 
               case 'i'
                 if dim(k) ~= 2
                     error('Isotropic depolarization not yet defined for non-qubits.')
                 end
-                C{end+1} = superop_lindblad({mkron(Ia, X, Ib),mkron(Ia, Y, Ib),mkron(Ia, Z, Ib)});
+                C{end+1} = superop_lindblad({mkron(Ia, X/2, Ib),mkron(Ia, Y/2, Ib),mkron(Ia, Z/2, Ib)});
                 labels{end+1} = sprintf('I_%d', k);
 
               otherwise
