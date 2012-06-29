@@ -249,7 +249,7 @@ classdef control_seq < matlab.mixin.Copyable
             set(ax, 'CLim', [0 nc])
             title(ax, 'Control Sequence')
             xlabel(ax, 'time')
-            ylabel(ax, 'control amplitude')
+            ylabel(ax, 'control amplitudes')
         else
             cla(ax);
         end

@@ -8,7 +8,7 @@ TODO list for Dynamo 1.3
 1. Sample/reference problem set
      (1) Include all the reference problems from Dynamo 1.2
       2. Additional sample problems for dissipative/partial systems
-            * Must cover all task types
+           * Must cover all task types
       3. Example of optimizing taus
 
 2. Minimal benchmarking framework
@@ -18,7 +18,7 @@ TODO list for Dynamo 1.3
 3. Robust data provenance, reproducibility
      (1) Store in the dataset all necessary metadata, such as
 	 Dynamo version, a timestamp, author name, description string etc.
-            * Going from description to H is easy, H to description hard/impossible.
+           * Going from description to H is easy, H to description hard/impossible.
       2. Store the optimization parameters, initial sequence etc. so
          the exact same optimization can be re-run any time. Add a
 	 function for this.
@@ -30,11 +30,12 @@ TODO list for Dynamo 1.3
      (2) taus as optimization parameters
       3. Nondiagonal transformations, i.e. x = A cos(B), y = A sin(B). 
       4. Shai's Jacobian stack?
+           * Strange bases for controls: CRAB?
       5. Preconditioning?
 
 5. Additional documentation
       1. Inline in the code
-             * Modify some variable names to be self-documenting
+	   * Modify some variable names to be self-documenting
       2. At function headers so Matlab's "help" gives more meaningful results
       3. Wiki
       4. Additional examples, see also 1.2
@@ -49,14 +50,11 @@ TODO list for Dynamo 1.3
 
 7. More algorithms
       1. "Integrators"
-          * (expm), (eigendecomposition), expv, ode solvers, t-DMRG?
+           * (expm), (eigendecomposition), expv, ode solvers, t-DMRG?
       2. Gradients
-          * (GRAPE), (exact, finite diff, 1st order)
+           * (GRAPE), (exact, finite diff, 1st order)
       3. Optimizers
-          * (k-BFGS, using fminunc), Newton-Raphson, Monotonic Krotov variant?, Simplex? (no gradient needed)
-
-8. Miscellaneous
-      1. Strange bases for controls: CRAB?
+           * (k-BFGS, using fminunc), Newton-Raphson, Monotonic Krotov variant?, Simplex? (no gradient needed)
 
 
 
