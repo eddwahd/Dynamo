@@ -1,9 +1,8 @@
 function randseed(seedvalue)
 % Set the random seed.
+%   randseed(seed)
+%
+%   A not-so-easily-repeating seed value would be for example sum(100*clock)
 
-if nargin < 1
-    seedvalue = sum(100*clock);
-end
 
-RandStream.setDefaultStream(RandStream('mt19937ar', 'seed', seedvalue));
-end
+RandStream.setGlobalStream(RandStream('mt19937ar', 'Seed', seedvalue));
