@@ -8,7 +8,7 @@ function [err, grad] = error_tr(self, control_mask)
   k = self.cache.g_setup_recalc();
   self.cache_refresh();
   temp = self.cache.L{k} * self.cache.U{k};
-  Q = partial_trace(temp, self.config.dimS, 1);
+  Q = partial_trace(temp, self.system.dimSE, 1);
 
   % trace norm
   [U, S, V] = svd(Q);

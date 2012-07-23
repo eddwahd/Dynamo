@@ -5,7 +5,9 @@ classdef qsystem < matlab.mixin.Copyable
     
   properties
     description = '' % description string
-    dim              % dimension vector for the Hilbert space of the system
+    dim              % dimension (or dim vector) of the Hilbert space of the full system S+E
+    dimSE            % total dimensions of S (the part we're interested in)
+                     % and the environment E, as a two-vector
     liouville        % Do the system objects X reside in Liouville or Hilbert space?
     A                % drift generator
     B                % cell vector of control generators
@@ -19,21 +21,30 @@ classdef qsystem < matlab.mixin.Copyable
 
   
   methods (Access = private)
+    function set_dim(self, i, f)
+    % Set up the Hilbert space dimensions.
+    % E may not exist, in which case it has dimension 1.
+        self.dim      = size(i, 1); % S+E
+        self.dimSE(1) = size(f, 1); % S
+    
+        temp = self.dim / self.dimSE(1); % E
+        if floor(temp) ~= temp  % must be an integer
+            error('Initial state must be an object on S+E, final state an object on S.');
+        end
+        self.dimSE(2) = temp;
+    end
+      
     function liouville_gens(self, H_drift, L_drift, H_ctrl)
     % Set up Liouville space generators for a system.
-
         self.A = -L_drift +1i*comm(H_drift);
 
         n_controls = length(H_ctrl);
         self.B = cell(1, n_controls);
         self.B_is_Hamiltonian = true(1, n_controls);
 
-        % Liouville space dimension
-        D = length(self.X_final);
-
         for k=1:n_controls
             % check for Liouvillian controls
-            if length(H_ctrl{k}) ~= D
+            if length(H_ctrl{k}) == self.dim
                 self.B{k} = 1i*comm(H_ctrl{k}); % Hamiltonian
             else
                 self.B{k} = -H_ctrl{k}; % Liouvillian
@@ -77,9 +88,9 @@ classdef qsystem < matlab.mixin.Copyable
     % X_* are Hilbert space objects (kets or operators)
 
         self.liouville = false;
+        self.set_dim(i, f);
         self.X_initial = i;
         self.X_final   = f;
-        self.dim = size(i, 1);
         self.hilbert_gens(H_drift, H_ctrl);
     end
 
@@ -89,6 +100,7 @@ classdef qsystem < matlab.mixin.Copyable
     % vec-torized state operators.
 
         self.liouville = true;
+        self.set_dim(i, f);
         % state vectors are converted to state operators
         if size(i, 2) == 1
             i = i * i';
@@ -98,7 +110,6 @@ classdef qsystem < matlab.mixin.Copyable
         end
         self.X_initial = vec(i);
         self.X_final   = vec(f);
-        self.dim = size(i, 1);
         self.liouville_gens(H_drift, L_drift, H_ctrl);
     end
 
@@ -108,9 +119,9 @@ classdef qsystem < matlab.mixin.Copyable
     % vec-torized unitary gates.
 
         self.liouville = true;
+        self.set_dim(i, f);
         self.X_initial = lrmul(i, i'); % == kron(conj(i), i);
         self.X_final   = lrmul(f, f'); % == kron(conj(f), f);
-        self.dim = size(i, 1);
         self.liouville_gens(H_drift, L_drift, H_ctrl);
     end
 
@@ -119,8 +130,7 @@ classdef qsystem < matlab.mixin.Copyable
     % Describe the system, label the states and controls. The labels are cell vectors of strings.
 
         self.description = desc;
-        
-        D = prod(self.dim);
+        D = self.dimSE(1); % label just the S states
         n_controls = length(self.B);
         
         if nargin < 3 || isempty(st_labels)
@@ -129,11 +139,13 @@ classdef qsystem < matlab.mixin.Copyable
         elseif ~iscell(st_labels)
             % it's a dim vector, use standard computational basis labeling
             dim = st_labels;
-            if prod(dim) ~= D
-                error('Dimension vector given does not match the total Hilbert space dimension.')
+            if prod(dim) ~= prod(self.dimSE)
+                error('Dimension vector given does not match the Hilbert space dimension.')
             end
-            
-            n = length(dim);
+            self.dim = dim; % store the dim vector (replacing the default scalar total dimension)
+
+            % find where S ends and E starts
+            n = find(cumprod(dim) == D, 1);
             ket = zeros(1,n);
             st_labels = cell(1, D);
             % build the labels
@@ -147,7 +159,6 @@ classdef qsystem < matlab.mixin.Copyable
                     ket(b) = 0;
                 end
             end
-            self.dim = dim; % store the dim vector (replacing the default scalar total dimension)
         end
 
         if nargin < 4 || isempty(c_labels)
@@ -155,7 +166,7 @@ classdef qsystem < matlab.mixin.Copyable
         end
         
         if length(st_labels) ~= D
-            error('Number of state labels given does not match the Hilbert space dimension.')
+            error('Number of state labels given does not match the Hilbert space dimension of S.')
         end
         self.state_labels = st_labels;
         

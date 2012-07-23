@@ -15,7 +15,7 @@ else
     P_epsilon = expm(-self.seq.tau(t) * H_eps);
 end
 
-X_S = partial_trace(self.cache.L{t+1} * (P_epsilon * self.cache.U{t}), self.config.dimS, 2);
+X_S = partial_trace(self.cache.L{t+1} * (P_epsilon * self.cache.U{t}), self.system.dimSE, 2);
 
-E_at_eps_point = 0.5 * normalized_distance(self.system.X_final, X_S, self.system.norm2);
+E_at_eps_point = 0.5 * norm2(self.system.X_final -X_S) / self.system.norm2;
 ret = (E_at_eps_point - self.cache.E) / epsilon;

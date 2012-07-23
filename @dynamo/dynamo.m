@@ -86,12 +86,12 @@ classdef dynamo < matlab.mixin.Copyable
         for k = 1:length(H_ctrl)
             H_ctrl{k} = full(H_ctrl{k});
         end
-        input_dim = [size(initial, 2), size(final, 2)]; % check the validity of the inputs
-
+        input_rank = [size(initial, 2), size(final, 2)]; % check the validity of the inputs
+        
         out = 'Target operation:';
         switch system_str
           case {'s'}
-            %% Closed system S
+            %% Closed system
             if nargin == 6
                 error('L_drift not used in closed systems.')
             end
@@ -101,26 +101,32 @@ classdef dynamo < matlab.mixin.Copyable
               case 'state'
                 % TEST more efficient Hilbert space implementation
                 out = strcat(out, ' mixed state transfer');
-                if any(input_dim == 1)
+                if any(input_rank == 1)
                     error('Initial and final states should be state operators.')
                 end
+                sys.hilbert_representation(initial, final, H_drift, H_ctrl);
+                config.f_max = 0.5 * (1 + norm2(sys.X_initial) / norm2(sys.X_final));
                 config.error_func = @error_real;
                 config.gradient_func = @gradient_g_mixed_exact;
                 config.UL_hack = true;
+
                 
               case {'ket', 'gate'}
                 if strcmp(task_str, 'ket')
                     out = strcat(out, ' pure state transfer');
-                    if any(input_dim ~= 1)
+                    if any(input_rank ~= 1)
                         error('Initial and final states should be normalized kets.')
                     end
                 else
                     out = strcat(out, ' unitary gate');
-                    if any(input_dim == 1)
+                    if any(input_rank == 1)
                         error('Initial and final states should be unitary operators.')
                     end
                 end
-                
+                sys.hilbert_representation(initial, final, H_drift, H_ctrl);
+                % f_max should always be 1 in this case...
+                config.f_max = 1;
+
                 if strcmp(extra_str, 'phase')
                     out = strcat(out, ' (with global phase (NOTE: unphysical!))');
                     config.error_func = @error_real;
@@ -128,23 +134,17 @@ classdef dynamo < matlab.mixin.Copyable
                     out = strcat(out, ' (ignoring global phase)');
                     config.error_func = @error_abs;
                 end
-                %config.f_max = 1;
                 config.gradient_func = @gradient_g_exact;
 
-
-              %% system S + environment E
+                
+              % system S + environment E
               case 'gate_partial'
                 out = strcat(out, ' partial unitary gate (on S)');
-                if any(input_dim == 1)
+                if any(input_rank == 1)
                     error('Initial and final states should be unitary operators.')
                 end
-
-                dimE = input_dim(1) / input_dim(2);
-                if floor(dimE) ~= dimE
-                    error('Initial state must be a unitary on S+E, final state a unitary on S.');
-                end
-                final = kron(final, eye(dimE));
-                config.dimS = input_dim(2);
+                sys.hilbert_representation(initial, final, H_drift, H_ctrl);
+                sys.X_final = kron(final, eye(sys.dimSE(2))); % now that we know dimE...
                 config.error_func = @error_tr;
                 config.gradient_func = @gradient_tr_exact;
                 
@@ -155,13 +155,11 @@ classdef dynamo < matlab.mixin.Copyable
                 error('Unknown task.')
             end
             
-            sys.hilbert_representation(initial, final, H_drift, H_ctrl);
-            config.f_max = 0.5 * (1 + norm2(sys.X_initial) / norm2(sys.X_final));
             out = strcat(out, ' in a closed system.\n');
 
             
           case {'sb'}
-            %% Open system S with bath B
+            %% Open system with a Markovian bath
             % The generator isn't usually normal, so we cannot use the exact gradient method
 
             switch task_str
@@ -177,35 +175,24 @@ classdef dynamo < matlab.mixin.Copyable
                     config.f_max = 1;
                 else
                     % full distance error function
-                    config.dimS = 0; % HACK
                     config.error_func = @error_full;
                     config.gradient_func = @gradient_full_1st_order;
                 end
                 
               case 'gate'
                 out = strcat(out, ' quantum gate');
-                if any(input_dim == 1)
+                if any(input_rank == 1)
                     error('Initial and final states should be unitary operators.')
                 end
                 sys.vec_gate_representation(initial, final, H_drift, L_drift, H_ctrl);
-                config.dimS = 0; % HACK
                 config.error_func = @error_full;
                 config.gradient_func = @gradient_full_1st_order;
 
 
-              %% system S + environment E
+              % system S + environment E
               case 'state_partial'
                 out = strcat(out, ' partial state transfer (on S)');
-                if any(input_dim == 1)
-                    error('Initial and final states should be state operators.')
-                end
-                dimE = input_dim(1) / input_dim(2);
-                if floor(dimE) ~= dimE
-                    error('Initial state must be a state operator on S+E, final state a state operator on S.');
-                end
                 sys.vec_representation(initial, final, H_drift, L_drift, H_ctrl);
-                sys.X_final = final; % HACK
-                config.dimS = input_dim(2);
                 config.error_func = @error_full;
                 config.gradient_func = @gradient_full_1st_order;
                 
@@ -225,11 +212,11 @@ classdef dynamo < matlab.mixin.Copyable
         end
         fprintf(out);
         if sys.liouville
-            fprintf('Liouville');
+            fprintf('Liouville space dimension: %d\n\n', sys.dim^2);
         else
-            fprintf('Hilbert');
+            fprintf('Hilbert space dimension: %d\n\n', sys.dim);
         end
-        fprintf(' space dimension: %d\n\n', length(sys.X_initial));
+        
           
         % Calculate the squared norm |X_final|^2 to scale the fidelities with.
         % We use the Hilbert-Schmidt inner product (and the induced Frobenius norm) throughout the code.
@@ -252,7 +239,7 @@ classdef dynamo < matlab.mixin.Copyable
         % some error functions need a full reverse propagator.
         temp = self.config.error_func;
         if isequal(temp, @error_full)
-            L_end = eye(length(self.system.X_initial)); % L: full reverse propagator
+            L_end = eye(prod(self.system.dim)); % L: full reverse propagator
         else
             L_end = self.system.X_final'; % L: X_final' propagated backwards
         end
@@ -408,7 +395,6 @@ classdef dynamo < matlab.mixin.Copyable
         xlabel('wall time (s)')
         ylabel(ax(1), 'normalized error')
         ylabel(ax(2), 'control integral')
-        grid on
         set(h2, 'LineStyle','--')
     end
 
@@ -432,7 +418,6 @@ classdef dynamo < matlab.mixin.Copyable
             title(ax, self.system.description);
             xlabel(ax, 'time');
             ylabel(ax, 'probability');
-            grid(ax, 'on')
             set(ax, 'NextPlot','replacechildren'); % so plot() won't reset these properties
         else
             %cla(ax);
@@ -444,7 +429,8 @@ classdef dynamo < matlab.mixin.Copyable
         else
             state_probs = @prob_ket;
         end
-        
+        %state_probs = @eig_stateop; % FIXME
+
         if nargin < 4
             % one plot point per timeslot
             for k = 0:n
@@ -478,19 +464,25 @@ classdef dynamo < matlab.mixin.Copyable
         axis(ax, [0, t(end), 0, 1]);
         legend(self.system.state_labels);
 
+        % NOTE: due to the horrible scoping rules of MATLAB, we use small x
+        % in these functions as not to nuke the capital X in the parent function.
 
         function p = prob_stateop(x)
         % Returns the diagonal of a vectorized state operator.
-        % NOTE: due to the horrible scoping rules of MATLAB, we use small x
-        % here as not to nuke the capital X in the parent function.
-            p = real(diag(inv_vec(x)));
+            x = partial_trace(inv_vec(x), self.system.dimSE, 2);
+            p = real(diag(x));
         end
-    
+     
         function p = prob_ket(x)
         % Returns the absolute values squared of ket vector elements.
-        % NOTE: due to the horrible scoping rules of MATLAB, we use small x
-        % here as not to nuke the capital X in the parent function.
             p = real(x .* conj(x));
+        end
+
+        function p = eig_stateop(x)
+        % Returns the real, nonnegative eigenvalues of the state operator.
+            x = partial_trace(inv_vec(x), self.system.dimSE, 2);
+            x = 0.5 * (x + x'); % eliminate numerical errors
+            p = eig(x);
         end
     end
   end

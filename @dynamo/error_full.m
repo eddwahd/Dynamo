@@ -5,8 +5,8 @@ function [err, grad] = error_full(self, control_mask)
 % Otherwise also gives the corresponding gradient.
 
 
-X_S = partial_trace(self.X(), self.config.dimS, 2);
-err = 0.5 * normalized_distance(self.system.X_final, X_S, self.system.norm2);
+X_S = partial_trace(self.X(), self.system.dimSE, 2);
+err = 0.5 * norm2(self.system.X_final -X_S) / self.system.norm2;
 self.cache.E = err;
 
 if nargin == 2

@@ -1,28 +1,28 @@
-function res = partial_trace(x, S, q)
+function res = partial_trace(x, SE, q)
 % Partial trace over one subsystem.
-%   y = partial_trace(x, dim_S, q)
+%   y = partial_trace(x, [dim_S dim_E], q)
 %
-%   Returns y = trace_q(x), where x is an operator on H_S \otimes H_E
-%   (or its vectorization). q is either 1 or 2.
+%   x is an operator on H_S \otimes H_E (or its vectorization).
+%   q is either 1 or 2, denoting which subsystem (S or E) to trace over.
 %
-%   y is an operator on the remaining Hilbert space.
+%   y is an operator on the remaining Hilbert space
+%     (or its vectorization, depending on the shape of x).
 
-    if S == 0
-        % quick exit
+% Ville Bergholm 2012
+
+
+    if SE(q) == 1
+        % nothing to do, quick exit
         res = x;
-        return
     end
 
-    % figure out dim_E
-    if size(x, 2) == 1
-        % vectorized
-        dim = sqrt(length(x));
-    else
-        % square matrix
-        dim = size(x, 1);
+    S = SE(1);
+    E = SE(2);
+    dim = prod(SE);
+    if prod(size(x)) ~= dim^2
+        error('The size of x does not match S*E.')
     end
-    E = dim / S;
-
+    
     % build a linear index stencil for taking the partial trace
     if q == 1
         % trace over S
@@ -40,8 +40,12 @@ function res = partial_trace(x, S, q)
         stencil = zeros(S, S);
         col = (0:S-1) * E + 1;  % linear indices for the first column
         for k=0:S-1
-            stencil(:, k+1) = col +(k * dim * E);
+            stencil(:, k+1) = col +(k * E * dim);
         end
+    end
+    % if x is vectorized, vectorize also the stencil.
+    if size(x, 2) == 1
+        stencil = stencil(:);
     end
 
     % take the trace

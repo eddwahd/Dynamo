@@ -250,7 +250,6 @@ classdef control_seq < matlab.mixin.Copyable
             title(ax, 'Control Sequence')
             xlabel(ax, 'time')
             ylabel(ax, 'control amplitude')
-            grid(ax, 'on')
         else
             cla(ax);
         end

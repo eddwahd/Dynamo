@@ -10,5 +10,7 @@ function set_plotstyle(ax)
 
 set(ax, 'FontSize',18); %, 'FontName','Bitstream Vera Sans');
 set(get(ax, 'Parent'), 'DefaultLineLineWidth',1); % apparently not an axes property(!)
-set(ax, 'LineStyleOrder', '-|-.')
+%set(ax, 'LineStyleOrder', '-|-.')
+set(ax, 'Box','on');
+set(ax, 'XMinorGrid','off', 'YMinorGrid','off')
 end
