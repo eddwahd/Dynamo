@@ -1,34 +1,41 @@
-function [diff, s] = test_gradient(seed)
+function [diff, s] = test_gradient(d, seed)
 % Checks if the computed gradient of the error function is accurate.
-% Uses one of the test suite problems.
+%
+% d is a Dynamo instance containing the optimization problem used.
+% If no d is given, uses one of the test suite problems.
 
 % Ville Bergholm 2011-2012
 
-randseed(seed);
 
+if nargin >= 2
+    randseed(seed);
+end
 
 %% set up a system, random controls
 
-d = test_suite(21);
-mask = d.full_mask(true);
+if nargin < 1
+    d = test_suite(21);
 
+    %% choose an error function and a compatible gradient
 
-%% choose an error function and a compatible gradient
+    %d.config.error_func = @error_abs;
+    %d.config.error_func = @error_real;
+    d.config.error_func = @error_full;
+    d.config.dimS = length(d.system.X_initial);
 
-%d.config.error_func = @error_abs;
-%d.config.error_func = @error_real;
-d.config.error_func = @error_full;
-d.config.dimS = length(d.system.X_initial);
+    d.config.epsilon = 1e-3;
 
-d.config.epsilon = 1e-7;
+    %d.config.gradient_func = @gradient_g_exact;
+    %d.config.gradient_func = @gradient_g_1st_order;
+    %d.config.gradient_func = @gradient_g_finite_diff;
 
-%d.config.gradient_func = @gradient_g_exact;
-%d.config.gradient_func = @gradient_g_1st_order;
-%d.config.gradient_func = @gradient_g_finite_diff;
-
-%d.config.gradient_func = @gradient_full_1st_order;
-d.config.gradient_func = @gradient_full_finite_diff;
-% TODO explain the O(s) behavior of gradient_full_finite_diff
+    %d.config.gradient_func = @gradient_full_1st_order;
+    d.config.gradient_func = @gradient_full_finite_diff;
+    % TODO explain the asymptotic O(s) behavior of
+    % gradient_full_finite_diff at very small delta (epsilon seems
+    % to set the cutoff point)
+end
+mask = d.full_mask(false);
 
 
 %% test the accuracy
