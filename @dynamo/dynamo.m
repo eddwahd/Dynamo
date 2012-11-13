@@ -35,6 +35,10 @@ classdef dynamo < matlab.mixin.Copyable
         if isstruct(obj)
             error('Backwards compatibility of saved objects not yet implemented.')
         end
+        % HACK, backwards compatibility. Assume that dim(E) = 1.
+        if isempty(obj.system.dimSE)
+            obj.system.dimSE = [prod(obj.system.dim), 1];
+        end
         obj.cache_init();
     end
   end
@@ -239,7 +243,7 @@ classdef dynamo < matlab.mixin.Copyable
         % some error functions need a full reverse propagator.
         temp = self.config.error_func;
         if isequal(temp, @error_full)
-            L_end = eye(prod(self.system.dim)); % L: full reverse propagator
+            L_end = eye(length(self.system.X_final)); % L: full reverse propagator
         else
             L_end = self.system.X_final'; % L: X_final' propagated backwards
         end

@@ -15,12 +15,22 @@ self.opt.N_eval = 0;
 self.opt.last_grad_norm = NaN;
 self.opt.term_reason = 'none yet';
 
+
+error_goal = 0.5 * (1e-4)^2 / self.system.norm2
+
+
 self.opt.term_cond = struct( ...
     'max_loop_count',     1e10, ...
-    'error_goal',        1e-4, ...
-    'max_wall_time',       300, ...
-    'max_cputime',         1e4, ...
+    'error_goal',         error_goal, ...
+    'max_wall_time',       1800, ...
+    'max_cputime',         5e5, ...
     'min_gradient_norm', 1e-20);
+
+if isfield(options, 'max_wall_time')
+    % TEST FIXME
+    self.opt.term_cond.max_wall_time = options.max_wall_time
+end
+
 
 % communication between the UI figure and monitor_func
 self.opt.stop = false;
@@ -37,10 +47,8 @@ self.opt.cpu_start = cputime();
 
 
 %% statistics
-
 self.stats.error = self.config.error_func(self);
 self.stats.wall_time = 0;
 self.stats.cpu_time  = 0;
 self.stats.integral  = self.seq.integral();
-%self.stats.fluence   = [];
 end
