@@ -149,7 +149,7 @@ classdef control_seq < matlab.mixin.Copyable
                 par = self.control_par{k};
                 ret(k) = acos(1 - (fields(k) - par(1)) * (2 / par(2)));
                 if imag(ret(k))
-                    error('Field %d not within the parameter limits.')
+                    error('Field %d not within the parameter limits.', k)
                 end
               otherwise
                 error('Unknown control type.')

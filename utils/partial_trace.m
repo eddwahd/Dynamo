@@ -14,6 +14,7 @@ function res = partial_trace(x, SE, q)
     if SE(q) == 1
         % nothing to do, quick exit
         res = x;
+        return
     end
 
     S = SE(1);
