@@ -86,3 +86,7 @@ Random ideas and things to test:
 
 - maybe it's not a good idea to normalize the error function with
   |X_f|^2 when doing state transfer since it (being the purity) varies?
+
+- store physical time(energy) unit in d.system, use in plots?
+
+- check that the chosen gradient func matches with the error func!

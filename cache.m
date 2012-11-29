@@ -67,6 +67,7 @@ classdef cache < matlab.mixin.Copyable
 
           self.g = NaN;
           self.E = NaN;
+          self.VUh = NaN;
           
           % Keep track of what needs re-computation if we want a complete update of everything.
           % U{1} and L{end} are never stale and never recomputed.
