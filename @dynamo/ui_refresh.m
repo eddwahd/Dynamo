@@ -23,11 +23,10 @@ function ui_refresh(self, full, err)
         self.plot_seq(ax, full);
         title(ax, self.system.description);
     end
-
     if nargin == 3
-        % Frobenius error
-        err = sqrt(2 * err * self.system.norm2);
-        text(0.05, 0.9, sprintf('Error_F: %6.6g', err), 'Units','normalized',...
+        % TODO Frobenius error
+        %err = sqrt(2 * err * self.system.norm2);
+        text(0.05, 0.9, sprintf('Error: %6.6g', err), 'Units','normalized',...
              'FontSize',18, 'BackgroundColor',[.8 .8 1])
     end
 

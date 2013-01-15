@@ -15,6 +15,7 @@ classdef qsystem < matlab.mixin.Copyable
     X_initial        % initial state
     X_final          % final state
     norm2            % squared norm of final state
+    TU = []          % time unit for generators, in seconds. G = A*t/TU = A/TU * t
     state_labels   = {} % names for the Hilbert space computational basis states
     control_labels = {} % names for the controls
   end
@@ -125,6 +126,10 @@ classdef qsystem < matlab.mixin.Copyable
         self.liouville_gens(H_drift, L_drift, H_ctrl);
     end
 
+    function set_TU(self, TU)
+    % Sets the time unit for the system.
+        self.TU = TU;
+    end
 
     function set_labels(self, desc, st_labels, c_labels)
     % Describe the system, label the states and controls. The labels are cell vectors of strings.

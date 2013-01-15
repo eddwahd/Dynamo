@@ -383,6 +383,9 @@ classdef dynamo < matlab.mixin.Copyable
 
         ax = self.seq.plot(self.system.control_labels, varargin{:});
         title(ax, self.system.description);
+        if ~isempty(self.system.TU)
+            xlabel(ax, sprintf('time (%g s)', self.system.TU));
+        end
     end
 
 
