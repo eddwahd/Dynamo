@@ -117,6 +117,7 @@ dyn.system.set_labels(desc, st_labels, c_labels);
 
 % try the expensive-but-reliable gradient method
 %dyn.config.epsilon = 1e-3;
+%dyn.config.error_func    = @error_full;
 %dyn.config.gradient_func = @gradient_full_finite_diff;
 
 

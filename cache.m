@@ -2,82 +2,90 @@ classdef cache < matlab.mixin.Copyable
 % Copyable handle class for doing the heavy computing and storing the results.
 
 % Shai Machnes   2010-2011
-% Ville Bergholm 2011-2012
+% Ville Bergholm 2011-2013
     
 
   properties (SetAccess = private)
+      %% cell arrays: Q{timeslice, ensemble_index}
       H  % Generator for a time slice.
       P  % Propagator for a time slice. Roughly P = expm(-dt * H). Computed by calcPfromHfunc.
       U  % Forward propagators. U{k+1} = P{k} * U{k}
          % U{k} is the system at t = sum(tau(1:(k-1))) = t_{k-1}
       L  % Backward propagators. L{k-1} = L{k} * P{k-1};
          % L{k} is the adjoint system at t = sum(tau(1:(k-1))) = t_{k-1}
-      g
-      H_v  % eigendecomposition data for -dt*H, updated when P is updated
-      H_eig_factor
+
+      H_v           % eigendecomposition data for -dt*H, updated when P is updated  
+      H_eig_factor  % likewise
+      
+      %% cell array: g{ensemble_index}
+      g  % trace_S(X_f^\dagger * X(t_n))
   end
 
   properties (Access = public)
-      H_needed_now  % flags
+      H_needed_now  % flags, Q[timeslice]
       P_needed_now
       U_needed_now
       L_needed_now
-      g_needed_now
+      g_needed_now  % scalar
       
-      E
-      VUh
+      E         % temp variable for error_full
+      VUdagger  % temp variable for error_tr
   end
 
   properties (Access = private)
-      H_is_stale  % flags
+      H_is_stale  % flags, Q[timeslice]
       P_is_stale
       U_is_stale
       L_is_stale
-      g_is_stale
+      g_is_stale  % scalar
       
       calcPfromHfunc
       UL_mixed  % flag: use mixed states in Hilbert space representation?
   end
 
   methods
-      function self = cache(n_timeslots, U_start, L_end, use_eig, UL_hack)
+      function self = cache(n_timeslots, n_ensemble, U_start, L_end, use_eig, UL_hack)
       % Set up caching (once we know the number of time slices and U and L endpoints).
 
-          temp = [1, n_timeslots];
+          s_time     = [1, n_timeslots];
+          s_ensemble = [1, n_ensemble];
+          s_full     = [n_timeslots, n_ensemble];
           
           if use_eig
               % Store the eigendecomposition data as well
-              self.H_v          = cell(temp);
-              self.H_eig_factor = cell(temp);
+              self.H_v          = cell(s_full);
+              self.H_eig_factor = cell(s_full);
               self.calcPfromHfunc = @calcPfromH_exact_gradient;
           else
               self.calcPfromHfunc = @calcPfromH_expm;
           end
           self.UL_mixed = UL_hack;
 
-          self.H = cell(temp);
-          self.P = cell(temp);
-          self.U = cell(temp + [0, 1]);
-          self.L = cell(temp + [0, 1]);
+          self.H = cell(s_full);
+          self.P = cell(s_full);
+          self.U = cell(s_full + [1, 0]); % one more timeslot
+          self.L = cell(s_full + [1, 0]); % one more timeslot
 
-          % U: X_initial propagated forward up to a time instant.
-          self.U{1} = U_start;
-          % L: X_final' propagated backward, or in open-system tasks, a pure propagator (even though this requires more memory).
-          self.L{end} = L_end;
+          for k=1:n_ensemble
+              % U: X_initial propagated forward up to a time instant.
+              self.U{1, k} = U_start;
+              % L: X_final' propagated backward, or in open-system tasks, a pure propagator (even though this requires more memory).
+              self.L{end, k} = L_end;
+          end
 
-          self.g = NaN;
+          self.g = cell(s_ensemble);
           self.E = NaN;
-          self.VUh = NaN;
+          self.VUdagger = NaN;
           
-          % Keep track of what needs re-computation if we want a complete update of everything.
+          % Keep track of which objects need re-computation.
           % U{1} and L{end} are never stale and never recomputed.
-          self.H_is_stale = true(temp);
-          self.P_is_stale = true(temp);
-          self.U_is_stale = [false, true(temp)]; % Updates for H via 'control_update' get propagated automatically
-          self.L_is_stale = [true(temp), false];
+          self.H_is_stale = true(s_time);
+          self.P_is_stale = true(s_time);
+          self.U_is_stale = [false, true(s_time)]; % Updates for H via 'control_update' get propagated automatically
+          self.L_is_stale = [true(s_time), false];
           self.g_is_stale = true;
           
-          % Here we indicate which values we need to have up-to-date
+          % Here we indicate which objects we need to have up-to-date
           % The 'needed_now' function looks at everything we need to recompute now, 
           % compared to what in principle is_stale, and (in principle) executes the
           % optimal set of operations so that for everything which was marked
@@ -87,10 +95,10 @@ classdef cache < matlab.mixin.Copyable
           % But for our immediate needs we only want U{7} and L{7},
           % so we mark U{4:end} as "is_stale", but only 4:7 as "needed_now".
 
-          self.H_needed_now = false(temp);   
-          self.P_needed_now = false(temp);   
-          self.U_needed_now = [false, false(temp)];
-          self.L_needed_now = [false(temp), false]; 
+          self.H_needed_now = false(s_time);   
+          self.P_needed_now = false(s_time);   
+          self.U_needed_now = [false, false(s_time)];
+          self.L_needed_now = [false(s_time), false]; 
           self.g_needed_now = false;
       end
       
@@ -100,7 +108,8 @@ classdef cache < matlab.mixin.Copyable
 
           self.H_is_stale(:) = true;
           self.P_is_stale(:) = true;
-          self.U_is_stale(2:end) = true;
+          % the first U and last L never become stale
+          self.U_is_stale(2:end) = true; 
           self.L_is_stale(1:(end-1)) = true;
           self.g_is_stale = true;
       end
@@ -129,19 +138,21 @@ classdef cache < matlab.mixin.Copyable
       % optimal set of operations so that for everything which was marked
       % 'needed_now' is up-to-date.
       %
-      % It then updates the 'is_stale' to indicate what has been actually
-      % computed, and clears the 'needed_now'
+      % It then updates the _is_stale flags to indicate what has been actually
+      % computed, and clears the _needed_now flags.
       %
       % The inter-dependence of H and U/L updates is taken care of in mark_as_stale()
 
-          n_timeslots = length(self.H);
+          n_timeslots = size(self.H, 1);
+          n_ensemble  = size(self.H, 2);
+          n_controls  = size(sys.B, 1);
           
           % computing g may require additional U and L elements, so check that first
           g_recompute_now = self.g_needed_now && self.g_is_stale;
           if g_recompute_now
-              % g can be computed using any slice k \in [1, n+1]: g = trace(L_k * U_k).
+              % g can be computed using any slice k \in [1, n+1]: g = trace_S(L_k * U_k).
               % Try to figure out which k requires least additional computation.
-              g_k = self.g_setup_recalc();
+              g_ind = self.g_setup_recalc();
           end
           
           U_recompute_now = self.U_needed_now & self.U_is_stale;
@@ -163,52 +174,66 @@ classdef cache < matlab.mixin.Copyable
           P_recompute_now = (U_recompute_now(2:end) | L_recompute_now(1:(end-1)) | self.P_needed_now) & self.P_is_stale;
           H_recompute_now = (P_recompute_now | self.H_needed_now) & self.H_is_stale;
 
-          % Compute the Hamiltonians
+          % timeslot indices to recompute
           h_idx = find(H_recompute_now);
+          p_idx = find(P_recompute_now);
+          u_idx = find(U_recompute_now);
+          el_idx = fliplr(find(L_recompute_now));
+
+          % loop over the ensemble of systems
+          for k=1:n_ensemble
+
+          % Compute the Hamiltonians
           for t=h_idx
-              H = sys.A;
-              for c = 1:length(sys.B)
+              H = sys.A{k};
+              for c = 1:n_controls
                   u = fields(t, c);
-                  H = H + u * sys.B{c};
+                  H = H + u * sys.B{c, k};
               end
-              self.H{t} = H;
+              self.H{t, k} = H;
           end
 
           % Compute the exp(H) and any other per-H computation which may be needed for the gradient function
-          p_idx = find(P_recompute_now);
           for t=p_idx
-              self.calcPfromHfunc(self, t, tau(t)); % Compute the Ps - a single piece of propagator
+              self.calcPfromHfunc(self, t, k, tau(t)); % Compute the Ps - a single piece of propagator
               % NOTE: calcPfromHfunc may also compute other values which will be needed for gradient calculations.
               %       These should be stored in cache. Their up-to-date-ness is identical to that of P.
           end
 
           % Compute the Us - forward propagation (we never recompute U{1})
-          u_idx = find(U_recompute_now);
           % Compute the Ls - adjoint system propagation
-          el_idx = fliplr(find(L_recompute_now));
           if self.UL_mixed
               % mixed states, unitary evolution: propagate from both sides
               for t=u_idx
-                  self.U{t} = self.P{t-1} * self.U{t-1} * self.P{t-1}';
+                  self.U{t, k} = self.P{t-1, k} * self.U{t-1, k} * self.P{t-1, k}';
               end
               for t=el_idx
-                  self.L{t} = self.P{t}' * self.L{t+1} * self.P{t};
+                  self.L{t, k} = self.P{t, k}' * self.L{t+1, k} * self.P{t, k};
               end
           else
               % propagate U from left, L from right
               for t=u_idx
-                  self.U{t} = self.P{t-1} * self.U{t-1};
+                  self.U{t, k} = self.P{t-1, k} * self.U{t-1, k};
               end
               for t=el_idx
-                  self.L{t} = self.L{t+1} * self.P{t};
+                  self.L{t, k} = self.L{t+1, k} * self.P{t, k};
               end
           end
 
-          % and finally g
+          % and finally g := trace_S(X_f^\dagger * X(t_n))
           if g_recompute_now
-              self.g = trace_matmul(self.L{g_k}, self.U{g_k});
-              self.g_is_stale = false;
+              % TODO combine somehow?
+              if sys.dimSE(2) == 1
+                  % no environment E, full trace, g is a scalar
+                  self.g{k} = trace_matmul(self.L{g_ind, k}, self.U{g_ind, k});
+              else
+                  % partial trace over S, g is a matrix
+                  temp = self.L{g_ind, k} * self.U{g_ind, k};
+                  self.g{k} = partial_trace(temp, sys.dimSE, 1);
+              end
           end
+
+          end % loop over ensemble
               
           % Mark what has been actually computed
           temp = [1, n_timeslots];
@@ -217,6 +242,9 @@ classdef cache < matlab.mixin.Copyable
           self.P_is_stale(P_recompute_now) = false;
           self.U_is_stale(U_recompute_now) = false;
           self.L_is_stale(L_recompute_now) = false;
+          if g_recompute_now
+              self.g_is_stale = false;
+          end
           
           self.H_needed_now = false(temp);
           self.P_needed_now = false(temp);
@@ -228,35 +256,35 @@ classdef cache < matlab.mixin.Copyable
       end
   
       
-      function calcPfromH_exact_gradient(self, t, dt)
-      % Computes cache.P{t} using the eigendecomposition, stores some
+      function calcPfromH_exact_gradient(self, t, k, dt)
+      % Computes cache.P{t, k} using the eigendecomposition, stores some
       % extra stuff for cheap exact gradient computation later on.
 
-          minus_dt_H = -dt * self.H{t};
-          N = length(minus_dt_H);
+          minus_dt_H = -dt * self.H{t, k};
+          %N = length(minus_dt_H);
 
           %% Compute the eigenvalue factors and eigenvectors of -dt*H
 
           [v, zeta, exp_d] = eig_factors(minus_dt_H, true);
-          self.H_v{t} = v;
-          self.H_eig_factor{t} = zeta;
+          self.H_v{t, k} = v;
+          self.H_eig_factor{t, k} = zeta;
 
           %% And finally expm(-dt*H) using the eigendecomposition
 
-          self.P{t} = v * diag(exp_d) * v';
+          self.P{t, k} = v * diag(exp_d) * v';
       end
 
 
-      function calcPfromH_expm(self, t, dt)
-      % Compute P{t} using expm.
-          self.P{t} = expm(-dt * self.H{t});
+      function calcPfromH_expm(self, t, k, dt)
+      % Compute P{t, k} using expm.
+          self.P{t, k} = expm(-dt * self.H{t, k});
       end
       
       
       function t = g_setup_recalc(self)
       % Returns the optimal time slice in which to compute g.
 
-      % Future work: Optimally, we can search for the time which will require minimum calculations to compute the value.
+      % TODO: Optimally, we can search for the time which will require minimum calculations to compute the value.
       % However, this is tricky (we need to count the expensive H-->P computations (expm or similar) and maybe weigh-in the cheap
       % U and L updates (matrix multiplications).
 

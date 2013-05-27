@@ -44,7 +44,7 @@ mask = d.full_mask(false);
 x = d.seq.get(mask);
 
 % error function and its gradient at x
-[err, grad] = d.config.error_func(d, mask);
+[err, grad] = d.error(mask);
 
 % random direction in parameter space
 temp = randn(size(x));
@@ -60,7 +60,7 @@ for k=1:length(s)
     
     % error func at x+delta
     d.update_controls(x + delta, mask);
-    accurate = d.config.error_func(d);
+    accurate = d.error();
     
     diff(k) = norm(predicted - accurate);
 end

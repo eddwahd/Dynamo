@@ -1,4 +1,4 @@
-function ret = gradient_g_mixed_exact(self, t, c)
+function ret = gradient_g_mixed_exact(self, t, k, c)
 % Exact gradient of the auxiliary function g for mixed states in a
 % closed system.
 
@@ -9,10 +9,12 @@ function ret = gradient_g_mixed_exact(self, t, c)
 
 if c < 0
     % dP_t/dtau_{t} = -H_t P_t = -P_t H_t
-    ret = -2 * self.seq.tau_deriv(t) * trace_matmul(self.cache.L{t+1}, self.cache.H{t} * self.cache.U{t+1} * self.cache.P{t}');
+    ret = 2 * self.seq.tau_deriv(t) * trace_matmul(self.cache.L{t+1, k}, self.cache.H{t, k} * self.cache.U{t+1, k} * self.cache.P{t, k}');
 else
-    dPdu = dPdu_exact(self.cache.H_v{t}, self.cache.H_eig_factor{t}, self.system.B{c});
-    ret = -2 * self.seq.tau(t) * self.seq.fields_deriv(t, c) * ...
-          trace_matmul(self.cache.L{t+1}, dPdu * self.cache.U{t} * self.cache.P{t}');
+    dPdu = dPdu_exact(self.cache.H_v{t, k}, self.cache.H_eig_factor{t, k}, self.system.B{c, k});
+    ret = 2 * self.seq.tau(t) * self.seq.fields_deriv(t, c) * ...
+          trace_matmul(self.cache.L{t+1, k}, dPdu * self.cache.U{t, k} * self.cache.P{t, k}');
 end
-ret = real(ret);
+
+% HACK this is a single-use function (only used with error_real) so
+% no VUdagger is needed, we can do the -1:s here directly

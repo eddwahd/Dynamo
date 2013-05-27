@@ -1,15 +1,11 @@
-function [err, grad] = error_full(self, control_mask)
-% Error function and its gradient for open (Markovian) systems.
-%
-% If no control_mask is given, computes just the error function.
-% Otherwise also gives the corresponding gradient.
+function err = error_full(self, k)
+% Error function for open (Markovian) systems.
+% k is the ensemble index.
 
 
-X_S = partial_trace(self.X(), self.system.dimSE, 2);
-err = 0.5 * norm2(self.system.X_final -X_S) / self.system.norm2;
+% system state at t_n
+temp = self.cache.U{end, k};
+
+X_S = partial_trace(temp, self.system.dimSE, 2);
+err = 0.5 * norm2(self.system.X_final -X_S);
 self.cache.E = err;
-
-if nargin == 2
-    grad = self.gradient(control_mask) / self.system.norm2;
-end
-end

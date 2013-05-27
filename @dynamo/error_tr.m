@@ -1,22 +1,12 @@
-function [err, grad] = error_tr(self, control_mask)
-% Error function and its gradient for closed S+E
-%
-% If no control_mask is given, computes just the error function.
-% Otherwise also gives the corresponding gradient.
+function err = error_tr(self, k)
+% Error function for closed S+E.
+% k is the ensemble index.
 
 
-  k = self.cache.g_setup_recalc();
-  self.cache_refresh();
-  temp = self.cache.L{k} * self.cache.U{k};
-  Q = partial_trace(temp, self.system.dimSE, 1);
+% trace norm
+[U, S, V] = svd(self.cache.g{k});
+err = self.config.f_max -trace(S);
 
-  % trace norm
-  [U, S, V] = svd(Q);
-  err = 1 -trace(S) / self.system.norm2;
-
-  if nargin == 2
-      % NOTE assumes S is not singular  
-      self.cache.VUh = V * U';
-      grad = real(self.gradient(control_mask)) / -self.system.norm2;
-  end
-end
+% NOTE assumes S is not singular  
+self.cache.VUdagger = V * U';
+% HACK, -1 that should be here is compensated for in gradient_tr_exact

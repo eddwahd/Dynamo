@@ -42,12 +42,12 @@ term_reason = self.opt.term_reason;
 end
 
 
-function [v, grad] = goal_and_gradient_function_wrapper(self, x)
+function [err, grad] = goal_and_gradient_function_wrapper(self, x)
 % x is a vector containing (a subset of) the controls
     
     self.opt.N_eval = self.opt.N_eval + 1;
 
     self.update_controls(x, self.opt.control_mask);
-    [v, grad] = self.config.error_func(self, self.opt.control_mask);
+    [err, grad] = self.error(self.opt.control_mask);
     self.opt.last_grad_norm = sqrt(sum(sum(grad .* grad)));
 end

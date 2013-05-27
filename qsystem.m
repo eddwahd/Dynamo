@@ -1,17 +1,19 @@
 classdef qsystem < matlab.mixin.Copyable
 % Copyable handle class defining a quantum system.
 
-% Ville Bergholm 2011-2012
+% Ville Bergholm 2011-2013
     
   properties
     description = '' % description string
     dim              % dimension (or dim vector) of the Hilbert space of the full system S+E
-    dimSE            % total dimensions of S (the part we're interested in)
-                     % and the environment E, as a two-vector
+    dimSE            % total dimensions of S (the part we're interested in) and the environment E, as a two-vector
     liouville        % Do the system objects X reside in Liouville or Hilbert space?
-    A                % drift generator
-    B                % cell vector of control generators
-    B_is_Hamiltonian % true if corresponding B item corresponds to a Hamiltonian
+
+    weight = 1       % vector, length == n_ensemble, weights for the ensemble samples
+    A                % cell vector of drift generators, size == [1, n_ensemble]
+    B                % cell array of control generators, size == [n_controls, n_ensemble]
+    B_is_Hamiltonian % vector, length == n_controls, true if corresponding B items represent Hamiltonians
+
     X_initial        % initial state
     X_final          % final state
     norm2            % squared norm of final state
@@ -37,41 +39,46 @@ classdef qsystem < matlab.mixin.Copyable
       
     function liouville_gens(self, H_drift, L_drift, H_ctrl)
     % Set up Liouville space generators for a system.
-        self.A = -L_drift +1i*comm(H_drift);
 
         n_controls = length(H_ctrl);
-        self.B = cell(1, n_controls);
+        self.A = cell(1, 1);
+        self.B = cell(n_controls, 1);
+
+        self.A{1} = -L_drift +1i*comm(H_drift);
         self.B_is_Hamiltonian = true(1, n_controls);
 
         for k=1:n_controls
             % check for Liouvillian controls
             if length(H_ctrl{k}) == self.dim
-                self.B{k} = 1i*comm(H_ctrl{k}); % Hamiltonian
+                self.B{k, 1} = 1i*comm(H_ctrl{k}); % Hamiltonian
             else
-                self.B{k} = -H_ctrl{k}; % Liouvillian
+                self.B{k, 1} = -H_ctrl{k}; % Liouvillian
                 self.B_is_Hamiltonian(k) = false;
             end
         end
+        self.weight = 1;
     end
 
 
     function hilbert_gens(self, H_drift, H_ctrl)
     % Set up Hilbert space generators for a system.
     % (NOTE: generators are not pure Hamiltonians, there's an extra 1i!)
-        self.A = 1i * H_drift;
 
         n_controls = length(H_ctrl);
-        self.B = cell(1, n_controls);
+        self.A = cell(1, 1);
+        self.B = cell(n_controls, 1);
+        
+        self.A{1} = 1i * H_drift;
         self.B_is_Hamiltonian = true(1, n_controls);
         for k=1:n_controls
-            self.B{k} = 1i * H_ctrl{k};
+            self.B{k, 1} = 1i * H_ctrl{k};
         end
+        self.weight = 1;
         %self.M = inprod_B(self.B);
 
         function M = inprod_B(B)
         % Computes the inner product matrix of the control operators.
 
-            n_controls = length(B);
             M = zeros(n_controls);
             for j = 1:n_controls
                 for k = 1:n_controls
@@ -85,21 +92,32 @@ classdef qsystem < matlab.mixin.Copyable
   
   
   methods
-    function hilbert_representation(self, i, f, H_drift, H_ctrl)
-    % X_* are Hilbert space objects (kets or operators)
-
+    function hilbert_representation(self, i, f, H_drift, H_ctrl, enlarge_f)
+    % X_ are Hilbert space objects (kets or operators).
+    % closed system: state, ket, gate, gate_partial, (TODO state_partial)
+    % For _partial tasks, i \in SE, f \in S.
+        
         self.liouville = false;
         self.set_dim(i, f);
         self.X_initial = i;
-        self.X_final   = f;
+        if nargin == 6 && enlarge_f
+            % only with gate_partial
+            self.X_final = kron(f, eye(self.dimSE(2)));
+        else
+            self.X_final = f;
+        end
+        
+        % Calculate the squared norm |X_final|^2 to scale the fidelities with.
+        % We use the Hilbert-Schmidt inner product (and the induced Frobenius norm) throughout the code.
+        self.norm2 = norm2(self.X_final);
         self.hilbert_gens(H_drift, H_ctrl);
     end
 
 
     function vec_representation(self, i, f, H_drift, L_drift, H_ctrl)
-    % X_* are Liouville space vectors corresponding to
-    % vec-torized state operators.
-
+    % X_* are Liouville space vectors corresponding to vec-torized state operators.
+    % open system: state, state_partial
+        
         self.liouville = true;
         self.set_dim(i, f);
         % state vectors are converted to state operators
@@ -111,18 +129,20 @@ classdef qsystem < matlab.mixin.Copyable
         end
         self.X_initial = vec(i);
         self.X_final   = vec(f);
+        self.norm2 = norm2(self.X_final);
         self.liouville_gens(H_drift, L_drift, H_ctrl);
     end
 
 
     function vec_gate_representation(self, i, f, H_drift, L_drift, H_ctrl)
-    % X_* are Liouville space operators corresponding to
-    % vec-torized unitary gates.
-
+    % X_* are Liouville space operators corresponding to vec-torized unitary gates.
+    % open system: gate
+        
         self.liouville = true;
         self.set_dim(i, f);
         self.X_initial = lrmul(i, i'); % == kron(conj(i), i);
         self.X_final   = lrmul(f, f'); % == kron(conj(f), f);
+        self.norm2 = norm2(self.X_final);
         self.liouville_gens(H_drift, L_drift, H_ctrl);
     end
 
@@ -136,7 +156,7 @@ classdef qsystem < matlab.mixin.Copyable
 
         self.description = desc;
         D = self.dimSE(1); % label just the S states
-        n_controls = length(self.B);
+        n_controls = size(self.B, 1);
         
         if nargin < 3 || isempty(st_labels)
             % use default state labels
@@ -179,6 +199,12 @@ classdef qsystem < matlab.mixin.Copyable
             error('Number of control labels given does not match the number of controls.')
         end
         self.control_labels = c_labels;
+    end
+    
+    
+    function ret = n_ensemble(self)
+    % Returns the number of systems in the ensemble sample.
+        ret = length(self.weight);
     end
   end
 end

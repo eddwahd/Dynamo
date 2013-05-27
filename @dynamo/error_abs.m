@@ -1,27 +1,14 @@
-function [err, grad] = error_abs(self, control_mask)
-% Projective error function and its gradient.
-%
-% If no control_mask is given, computes just the error function.
-% Otherwise also gives the corresponding gradient.
+function err = error_abs(self, k)
+% Projective error function, special case (dim E = 1) of error_tr().
+% k is the ensemble index.
 
 
-if nargin == 2
-    % It isn't any cheaper to compute g and grad_g at once rather than sequentially
-    % but since g can be computed using any U and L, it might be
-    % cheaper to compute the gradient first...
-    grad_g = self.gradient(control_mask);
-end
+g = self.cache.g{k};
+err = self.config.f_max -abs(g);
 
-g = self.g_func();
-%err = self.config.f_max^2 - abs(g)^2 / self.system.norm2^2;
-err = self.config.f_max - abs(g) / self.system.norm2;
-
-if nargin == 2
-    % gradient of |g|^2
-    %grad = 2 * real(conj(g) * grad_g) / -self.system.norm2^2;
-
-    % gradient of |g|
-    grad = real(conj(g)/abs(g) * grad_g) / -self.system.norm2;
-end
-
+temp = abs(g);
+if temp == 0
+    self.cache.VUdagger = 0; % |g| not differentiable at this point
+else
+    self.cache.VUdagger = -conj(g) / temp; % it actually _is_ this thing here, so not a hack.    
 end

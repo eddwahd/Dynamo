@@ -47,7 +47,7 @@ self.opt.cpu_start = cputime();
 
 
 %% statistics
-self.stats.error = self.config.error_func(self);
+self.stats.error = self.error();
 self.stats.wall_time = 0;
 self.stats.cpu_time  = 0;
 self.stats.integral  = self.seq.integral();

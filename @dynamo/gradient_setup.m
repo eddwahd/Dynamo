@@ -1,5 +1,6 @@
-function [grad] = gradient(self, control_mask)
-% Auxiliary function for computing the various gradients.
+function gradient_setup(self, control_mask)
+% Set up all the required _needed_now fields for computing the gradient.
+% TODO FIXME kind of a hack, the gradient funcs themselves should keep this information
 
 
 % Find out which Hs, Us, & Ls we need to compute the gradient.
@@ -8,7 +9,6 @@ slot_mask = any(control_mask, 2);
 self.cache.H_needed_now(slot_mask) = true;           % H_{slot}
 self.cache.L_needed_now([false; slot_mask]) = true;  % L_{slot+1}
 
-% TODO FIXME kind of a hack, the gradient funcs themselves should keep this information
 temp = self.config.gradient_func;
 if isequal(temp, @gradient_g_1st_order)...
         || isequal(temp, @gradient_full_1st_order)
@@ -39,22 +39,4 @@ elseif isequal(temp, @gradient_g_finite_diff) || isequal(temp, @gradient_full_fi
 
 else
     error('Unknown gradient function.')
-end
-self.cache_refresh();
-
-
-% tau are the last column of the controls
-tau_c = size(control_mask, 2);
-
-% iterate over the true elements of the mask
-grad = zeros(nnz(control_mask), 1);
-[Ts, Cs] = ind2sub(size(control_mask), find(control_mask));
-for z = 1:length(Ts)
-    t = Ts(z);
-    c = Cs(z);
-    if c == tau_c
-        c = -1; % denotes a tau control
-    end
-    
-    grad(z) = self.config.gradient_func(self, t, c);
 end
