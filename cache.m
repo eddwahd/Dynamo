@@ -28,8 +28,8 @@ classdef cache < matlab.mixin.Copyable
       L_needed_now
       g_needed_now  % scalar
       
-      E         % temp variable for error_full
-      VUdagger  % temp variable for error_tr
+      E         % cached current error value for gradient_*_finite_diff
+      VUdagger  % cached SVD data for error_tr, error_abs (also used by error_real) 
   end
 
   properties (Access = private)

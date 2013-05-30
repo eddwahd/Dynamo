@@ -4,7 +4,7 @@ function [diff, s] = test_gradient(d, seed)
 % d is a Dynamo instance containing the optimization problem used.
 % If no d is given, uses one of the test suite problems.
 
-% Ville Bergholm 2011-2012
+% Ville Bergholm 2011-2013
 
 
 if nargin >= 2
@@ -18,22 +18,26 @@ if nargin < 1
 
     %% choose an error function and a compatible gradient
 
-    %d.config.error_func = @error_abs;
+    d.config.error_func = @error_abs;
     %d.config.error_func = @error_real;
-    d.config.error_func = @error_full;
-    d.config.dimS = length(d.system.X_initial);
-
-    d.config.epsilon = 1e-3;
-
-    %d.config.gradient_func = @gradient_g_exact;
+    d.config.gradient_func = @gradient_g_exact;
     %d.config.gradient_func = @gradient_g_1st_order;
     %d.config.gradient_func = @gradient_g_finite_diff;
 
+    %d.config.error_func = @error_tr;
+    %d.config.gradient_func = @gradient_tr_exact;
+    %d.config.gradient_func = @gradient_tr_finite_diff;
+    
+    %d.config.error_func = @error_full;
     %d.config.gradient_func = @gradient_full_1st_order;
-    d.config.gradient_func = @gradient_full_finite_diff;
-    % TODO explain the asymptotic O(s) behavior of
-    % gradient_full_finite_diff at very small delta (epsilon seems
-    % to set the cutoff point)
+    %d.config.gradient_func = @gradient_full_finite_diff;
+
+    % TODO explain the asymptotic linear behavior of
+    % gradient_*_finite_diff at small delta (epsilon seems
+    % to set the cutoff point between quadratic and linear).
+    % Also, gradient_full_finite_diff seems to give mostly linear errors. Why?
+    
+    d.config.epsilon = 1e-4;
 end
 mask = d.full_mask(false);
 

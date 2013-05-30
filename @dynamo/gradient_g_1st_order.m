@@ -8,12 +8,12 @@ function ret = gradient_g_1st_order(self, t, k, c)
 
 if c < 0
     % tau control, exact
-    ret = -self.seq.tau_deriv(t) * trace_matmul(self.cache.L{t+1, k}, self.cache.H{t, k} * self.cache.U{t+1, k});
+    ret = self.seq.tau_deriv(t) * trace_matmul(self.cache.L{t+1, k}, self.cache.H{t, k} * self.cache.U{t+1, k});
 else
     % other control, approximate
     % TODO: this test is _really_ expensive, around 20% of total running time.
     %self.gradient_test(t, k, c);
-    ret = -self.seq.tau(t) * self.seq.fields_deriv(t, c) * trace_matmul(self.cache.L{t+1, k}, self.system.B{c, k} * self.cache.U{t+1, k});
+    ret = self.seq.tau(t) * self.seq.fields_deriv(t, c) * trace_matmul(self.cache.L{t+1, k}, self.system.B{c, k} * self.cache.U{t+1, k});
 end
 
 ret = ret * self.cache.VUdagger;

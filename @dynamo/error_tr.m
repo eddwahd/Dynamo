@@ -9,4 +9,3 @@ err = self.config.f_max -trace(S);
 
 % NOTE assumes S is not singular  
 self.cache.VUdagger = V * U';
-% HACK, -1 that should be here is compensated for in gradient_tr_exact

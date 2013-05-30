@@ -330,7 +330,7 @@ classdef dynamo < matlab.mixin.Copyable
         grad_out = 0;
         % loop over the ensemble
         for k=1:length(self.system.weight)
-            % normalized error
+            % (real) normalized error
             err = self.config.error_func(self, k) / self.system.norm2;
 
             % weighted
@@ -357,11 +357,8 @@ classdef dynamo < matlab.mixin.Copyable
                 end
                 grad(z) = self.config.gradient_func(self, t, k, c);
             end
-            % real, normalized
-            grad = real(grad) / self.system.norm2;
-            
-            % FIXME gradient_full sign, real    grad = self.gradient(control_mask) / self.system.norm2;
-            grad_out = grad_out +self.system.weight(k) * grad;
+            % real, normalized, weighted gradient
+            grad_out = grad_out +(self.system.weight(k) / self.system.norm2) * real(grad);
         end
     end
 
@@ -468,7 +465,7 @@ classdef dynamo < matlab.mixin.Copyable
     % Plots the evolution of the initial system as a function of time.
     % TODO for now it only handles kets and state ops
 
-        n = self.seq.n_timeslots();
+        n_timeslots = self.seq.n_timeslots();
 
         if nargin < 3
             full = true;
@@ -499,7 +496,7 @@ classdef dynamo < matlab.mixin.Copyable
 
         if nargin < 4
             % one plot point per timeslot
-            for k = 0:n
+            for k = 0:n_timeslots
                 res(k+1, :) = state_probs(self.X(k));
             end
             t = [0; cumsum(self.seq.tau)];
@@ -509,8 +506,9 @@ classdef dynamo < matlab.mixin.Copyable
             X = self.X(0);
             res(1, :) = state_probs(X);
 
-            for k = 1:n
+            for k = 1:n_timeslots
                 X_end = self.X(k); % make sure the cache is up-to-date
+                % FIXME ensembles
                 G = self.cache.H{k};
                 tau = self.seq.tau(k);
                 

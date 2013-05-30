@@ -10,5 +10,5 @@ temp = abs(g);
 if temp == 0
     self.cache.VUdagger = 0; % |g| not differentiable at this point
 else
-    self.cache.VUdagger = -conj(g) / temp; % it actually _is_ this thing here, so not a hack.    
+    self.cache.VUdagger = conj(g) / temp; % == V * U' for [U, S, V] = svd(g)
 end

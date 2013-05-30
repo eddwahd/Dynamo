@@ -7,7 +7,7 @@ TODO list for Dynamo 1.3
 
 1. Sample/reference problem set
      (1) Include all the reference problems from Dynamo 1.2
-      2. Additional sample problems for dissipative/partial systems
+     (2) Additional sample problems for dissipative/partial systems
            * Must cover all task types
       3. Example of optimizing taus
 
@@ -35,7 +35,7 @@ TODO list for Dynamo 1.3
 
 5. Additional documentation
       1. Inline in the code
-	   * Modify some variable names to be self-documenting
+	   (*) Modify some variable names to be self-documenting
       2. At function headers so Matlab's "help" gives more meaningful results
       3. Wiki
       4. Additional examples, see also 1.2
@@ -50,13 +50,17 @@ TODO list for Dynamo 1.3
 
 7. More algorithms
       1. "Integrators"
-           * (expm), (eigendecomposition), expv, ode solvers, t-DMRG?
+           * (expm), (eigendecomposition), expv, ode solvers (for time-dependent H:s and H_c:s), t-DMRG?
       2. Gradients
            * (GRAPE), (exact, finite diff, 1st order)
       3. Optimizers
            * (k-BFGS, using fminunc), Newton-Raphson, Monotonic Krotov variant?, Simplex? (no gradient needed)
 
-
+8. User interface
+      1. More button-type ui controls for the ui window
+           * Enable/disable tau optimization, save snapshot?, pause?, plotting interval...
+      2. Better API
+           * Replace s and sb with closed, open?
 
 
 Random ideas and things to test:
@@ -75,7 +79,7 @@ Random ideas and things to test:
 
 - Augmented matrix exponential gradient module for open systems, Floether et al. (2012)
 
-- performance-compare error_open and the approximation given by error_real
+- performance-compare error_full and the approximation given by error_real
 
 - compare top-curve-sweeping for determining optimal T with direct tau-optimizing
 
@@ -86,7 +90,5 @@ Random ideas and things to test:
 
 - maybe it's not a good idea to normalize the error function with
   |X_f|^2 when doing state transfer since it (being the purity) varies?
-
-- store physical time(energy) unit in d.system, use in plots?
 
 - check that the chosen gradient func matches with the error func!

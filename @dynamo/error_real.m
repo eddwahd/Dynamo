@@ -4,4 +4,4 @@ function err = error_real(self, k)
 
 
 err = self.config.f_max -real(self.cache.g{k});
-self.cache.VUdagger = -1;
+self.cache.VUdagger = 1; % HACK, no SVD
