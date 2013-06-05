@@ -341,7 +341,6 @@ classdef dynamo < matlab.mixin.Copyable
             end
 
             %% gradient
-            %grad_g = self.gradient(control_mask);
             
             % tau are the last column of the controls
             tau_c = size(control_mask, 2);
@@ -362,24 +361,30 @@ classdef dynamo < matlab.mixin.Copyable
         end
     end
 
-
-    function update_controls(self, x, control_mask)
+    
+    function update_controls(self, raw, control_mask, transformed)
     % Updates selected controls.
     %
-    %  x: vector of control values, control_mask: corresponding mask.
+    %  raw: vector of raw, untransformed control values, control_mask: corresponding mask.
     %
     %  Updates control values for which control_mask is true.
     %  Makes the changed timeslots and stuff that depends on them stale.
 
         old = self.seq.get();
+ 
+        % transformed coords instead of raw ones?
+        if nargin == 4 && transformed
+            raw = self.seq.inv_transform(raw);
+            control_mask = []; % always full
+        end
         
-        if nargin < 3
+        if nargin < 3 || isempty(control_mask)
             control_mask = true(size(old)); % full mask
         end
 
         % make a trial copy of the new controls
         new = old;
-        new(control_mask) = x;
+        new(control_mask) = raw;
 
         % see which timeslots have changed
         changed_t_mask = any(new ~= old, 2);

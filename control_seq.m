@@ -82,10 +82,15 @@ classdef control_seq < matlab.mixin.Copyable
     % Given raw controls r_k, computes the transformed controls c_k(r_k) and their derivatives.
     % Uses the (fixed) control parameters.
 
-        %% Check the number of control fields. The last column are the tau controls.
+        sss = size(raw);
         n_controls = self.n_controls();
-        if size(raw, 2) ~= n_controls + 1
-            error('Number of controls given does not match the number of control fields.')
+        
+        % Check the number of control fields. The last column are the tau controls.
+        if sss(1) ~= self.n_timeslots()
+            error('Given controls have the wrong number of timeslots.')
+        end
+        if sss(2) ~= n_controls + 1
+            error('Given controls have the wrong number of control fields.')
         end
 
         self.raw = raw;
@@ -99,9 +104,9 @@ classdef control_seq < matlab.mixin.Copyable
         self.tau       = self.tau_par(:,1) +0.5 * self.tau_par(:,2) .* (1-cos(t_raw));
         self.tau_deriv = 0.5 * self.tau_par(:,2) .* sin(t_raw);
 
-        temp = size(raw) - [0, 1];
-        self.fields = zeros(temp);
-        self.fields_deriv = zeros(temp);
+        sss = sss -[0, 1];
+        self.fields = zeros(sss);
+        self.fields_deriv = zeros(sss);
 
         for k=1:n_controls
             switch self.control_type(k)
@@ -115,7 +120,7 @@ classdef control_seq < matlab.mixin.Copyable
                 
               case 'm'  % minimum and delta, u_k = min + delta * 0.5 * (1 - cos(r_k))
                 par = self.control_par{k};
-                self.fields(:, k) = par(1) +par(2) * 0.5 * (1 - cos(raw(:, k)));
+                self.fields(:, k) = par(1) +par(2) * 0.5 * (1 -cos(raw(:, k)));
                 self.fields_deriv(:, k) = par(2) * 0.5 * sin(raw(:, k));
       
               otherwise
@@ -129,30 +134,44 @@ classdef control_seq < matlab.mixin.Copyable
 
 
     function ret = inv_transform(self, fields)
-    % Given a set of controls field values, returns the
-    % corresponding raw controls (not including tau).
+    % Given a set of control field values (optionally tau as the
+    % last column), returns the corresponding raw controls.
 
         n_controls = self.n_controls();
-        ret = zeros(1, n_controls);
+
+        ret = zeros(size(fields));
         for k=1:n_controls
             switch self.control_type(k)
               case '.'  % no transformation
-                ret(k) = fields(k);
+                ret(:, k) = fields(:, k);
         
               case 'p'  % strictly nonnegative, u_k = r_k^2
-                if fields(k) < 0
+                if any(fields(:, k) < 0)
                     error('Field %d not nonnegative.', k)
                 end
-                ret(k) = sqrt(fields(k));
+                ret(:, k) = sqrt(fields(:, k));
                 
               case 'm'  % minimum and delta, u_k = min + delta * 0.5 * (1 - cos(r_k))
                 par = self.control_par{k};
-                ret(k) = acos(1 - (fields(k) - par(1)) * (2 / par(2)));
-                if imag(ret(k))
-                    error('Field %d not within the parameter limits.', k)
+                ret(:, k) = acos(1 -(fields(:, k) -par(1)) * (2 / par(2)));
+                if any(imag(ret(:, k)))
+                    warning('Field %d not within the parameter limits.', k)
+                    crap = imag(ret(:, k))
+                    ret(:, k) = real(ret(:, k));
                 end
               otherwise
                 error('Unknown control type.')
+            end
+        end
+        
+        tau_c = n_controls + 1;
+        if size(fields, 2) == tau_c
+            % tau control
+            ret(:, tau_c) =  acos(1 -(fields(:, tau_c) -self.tau_par(:,1)) .* (2./self.tau_par(:,2)));
+            if any(imag(ret(:, tau_c)))
+                warning('taus not within the parameter limits.')
+                crap = imag(ret(:, tau_c))
+                ret(:, tau_c) = real(ret(:, tau_c));
             end
         end
     end
