@@ -8,7 +8,7 @@ classdef cache < matlab.mixin.Copyable
   properties (SetAccess = private)
       %% cell arrays: Q{timeslice, ensemble_index}
       H  % Generator for a time slice.
-      P  % Propagator for a time slice. Roughly P = expm(-dt * H). Computed by calcPfromHfunc.
+      P  % Propagator for a time slice, computed by calcPfromHfunc. With a constant H, P == expm(-dt * H). 
       U  % Forward propagators. U{k+1} = P{k} * U{k}
          % U{k} is the system at t = sum(tau(1:(k-1))) = t_{k-1}
       L  % Backward propagators. L{k-1} = L{k} * P{k-1};
@@ -30,6 +30,8 @@ classdef cache < matlab.mixin.Copyable
       
       E         % cached current error value for gradient_*_finite_diff
       VUdagger  % cached SVD data for error_tr, error_abs (also used by error_real) 
+  
+      int = []  % TEST, integrator
   end
 
   properties (Access = private)
@@ -55,9 +57,9 @@ classdef cache < matlab.mixin.Copyable
               % Store the eigendecomposition data as well
               self.H_v          = cell(s_full);
               self.H_eig_factor = cell(s_full);
-              self.calcPfromHfunc = @calcPfromH_exact_gradient;
+              self.calcPfromHfunc = @calcP_expm_exact_gradient;
           else
-              self.calcPfromHfunc = @calcPfromH_expm;
+              self.calcPfromHfunc = @calcP_expm;
           end
           self.UL_mixed = UL_hack;
 
@@ -183,19 +185,44 @@ classdef cache < matlab.mixin.Copyable
           % loop over the ensemble of systems
           for k=1:n_ensemble
 
-          % Compute the Hamiltonians
-          for t=h_idx
-              H = sys.A{k};
-              for c = 1:n_controls
-                  u = fields(t, c);
-                  H = H + u * sys.B{c, k};
-              end
-              self.H{t, k} = H;
+          if isequal(self.calcPfromHfunc, @calcP_int)
+              % set up stuff in the integrator
+              
+              % control fields
+              temp = 1:2:n_controls;
+              x = fields(:, temp);
+              y = fields(:, temp+1);
+              self.int.amp = sqrt(x.^2 +y.^2);
+              self.int.phi = atan2(y, x);
+              
+              % tau
+              self.int.tau = tau;
+              self.int.comp();
+              
+              % integrate props.
+              
+              % TODO FIXME crosstalk makes all gradients except the
+              % finite_diff ones invalid?, and even the finite_diff
+              % ones have to be computed using an integrator?
+
+              % FIXME with crosstalk currently taus must not change
+              % (because a changing tau would invalidate every
+              % propagator following it too)
           end
+              % Compute the Hamiltonians
+              for t=h_idx
+                  H = sys.A{k};
+                  for c = 1:n_controls
+                      u = fields(t, c);
+                      H = H +u * sys.B{c, k};
+                  end
+                  self.H{t, k} = H;
+              end
+
 
           % Compute the exp(H) and any other per-H computation which may be needed for the gradient function
           for t=p_idx
-              self.calcPfromHfunc(self, t, k, tau(t)); % Compute the Ps - a single piece of propagator
+              self.P{t, k} = self.calcPfromHfunc(self, t, k, tau(t)); % Compute the Ps - a single piece of propagator
               % NOTE: calcPfromHfunc may also compute other values which will be needed for gradient calculations.
               %       These should be stored in cache. Their up-to-date-ness is identical to that of P.
           end
@@ -254,10 +281,10 @@ classdef cache < matlab.mixin.Copyable
 
           %ret = [sum(H_recompute_now), sum(P_recompute_now), sum(U_recompute_now), sum(L_recompute_now)]
       end
-  
-      
-      function calcPfromH_exact_gradient(self, t, k, dt)
-      % Computes cache.P{t, k} using the eigendecomposition, stores some
+
+
+      function ret = calcP_expm_exact_gradient(self, t, k, dt)
+      % Computes P{t, k} using the eigendecomposition, stores some
       % extra stuff for cheap exact gradient computation later on.
 
           minus_dt_H = -dt * self.H{t, k};
@@ -271,16 +298,34 @@ classdef cache < matlab.mixin.Copyable
 
           %% And finally expm(-dt*H) using the eigendecomposition
 
-          self.P{t, k} = v * diag(exp_d) * v';
+          ret = v * diag(exp_d) * v';
       end
 
 
-      function calcPfromH_expm(self, t, k, dt)
-      % Compute P{t, k} using expm.
-          self.P{t, k} = expm(-dt * self.H{t, k});
+      function ret = calcP_expm(self, t, k, dt)
+      % Computes P{t, k} using expm.
+          ret = expm(-dt * self.H{t, k});
+      end
+
+
+      function ret = calcP_int(self, t, k, dt)
+      % Computes P{t, k} by integrating a time-dependent Hamiltonian. 
+      % Used to deal with control crosstalk in the RWA. Slow.
+
+          % the integrator already has the fields and taus updated
+          ret = self.int.int_bin_rwa(t);
+      end
+
+      function switch_to_int(self, int)
+      % FIXME test, switch to crosstalk-aware integrator.
+          self.int = int;
+          self.calcPfromHfunc = @calcP_int;
+          
+          % force P, U, L recomputation
+          self.invalidate();
       end
       
-      
+
       function t = g_setup_recalc(self)
       % Returns the optimal time slice in which to compute g.
 

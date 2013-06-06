@@ -6,16 +6,8 @@ function ret = gradient_full_finite_diff(self, t, k, c)
 %
 % Uses H{t}, U{t} and L{t+1}.
 
-epsilon = self.config.epsilon;
-if c < 0
-    tau_eps = self.seq.tau(t) +self.seq.tau_deriv(t) * epsilon;
-    P_epsilon = expm(-tau_eps * self.cache.H{t, k});
-else
-    H_eps = self.cache.H{t, k} +(epsilon * self.seq.fields_deriv(t, c)) * self.system.B{c, k};
-    P_epsilon = expm(-self.seq.tau(t) * H_eps);
-end
+[P, epsilon] = self.finite_diff_P(t, k, c);
+X_S = partial_trace(self.cache.L{t+1, k} * (P * self.cache.U{t, k}), self.system.dimSE, 2);
 
-X_S = partial_trace(self.cache.L{t+1, k} * (P_epsilon * self.cache.U{t, k}), self.system.dimSE, 2);
-
-E_at_eps_point = 0.5 * norm2(self.system.X_final -X_S);
-ret = (E_at_eps_point -self.cache.E) / epsilon;
+E_at_eps = 0.5 * norm2(self.system.X_final -X_S);
+ret = (E_at_eps -self.cache.E) / epsilon;

@@ -7,16 +7,8 @@ function ret = gradient_g_finite_diff(self, t, k, c)
 %
 % Uses g, H{t}, U{t} and L{t+1}.
 
-epsilon = self.config.epsilon;
-if c < 0
-    tau_eps = self.seq.tau(t) +self.seq.tau_deriv(t) * epsilon;
-    P_epsilon = expm(-tau_eps * self.cache.H{t, k});        
-else
-    H_eps = self.cache.H{t, k} +(epsilon * self.seq.fields_deriv(t, c)) * self.system.B{c, k};
-    P_epsilon = expm(-self.seq.tau(t) * H_eps);
-end
+[P, epsilon] = self.finite_diff_P(t, k, c);
+g_at_eps = trace_matmul(self.cache.L{t+1, k}, P * self.cache.U{t, k});
 
-g_at_eps_point = trace_matmul(self.cache.L{t+1, k}, P_epsilon * self.cache.U{t, k});
-ret = (g_at_eps_point -self.cache.g{k}) / epsilon;
-
+ret = (g_at_eps -self.cache.g{k}) / epsilon;
 ret = ret * -self.cache.VUdagger;

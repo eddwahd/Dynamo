@@ -325,7 +325,7 @@ classdef dynamo < matlab.mixin.Copyable
             self.cache.g_needed_now = true;
         end
         self.cache_refresh(); % this call does the heavy computing (expm etc.)
-        
+
         err_out  = 0;
         grad_out = 0;
         % loop over the ensemble
@@ -341,7 +341,7 @@ classdef dynamo < matlab.mixin.Copyable
             end
 
             %% gradient
-            
+
             % tau are the last column of the controls
             tau_c = size(control_mask, 2);
 
@@ -359,6 +359,9 @@ classdef dynamo < matlab.mixin.Copyable
             % real, normalized, weighted gradient
             grad_out = grad_out +(self.system.weight(k) / self.system.norm2) * real(grad);
         end
+        disp('==============================')
+        err_out
+        grad_out
     end
 
     
@@ -390,6 +393,7 @@ classdef dynamo < matlab.mixin.Copyable
         changed_t_mask = any(new ~= old, 2);
 
         if any(changed_t_mask)
+            disp('controls changed')
             % actually update the controls
             self.seq.set(new);
             self.cache.mark_as_stale(changed_t_mask);
@@ -417,8 +421,7 @@ classdef dynamo < matlab.mixin.Copyable
         
         self.cache_refresh();
     end
-
-  
+    
   
     function ret = X(self, j, k)
     % Returns X(t_j), the controlled system at time t_j.
