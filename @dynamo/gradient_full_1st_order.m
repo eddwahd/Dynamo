@@ -6,7 +6,7 @@ function ret = gradient_full_1st_order(self, t, k, c)
 %
 % Uses H{t}, U{t+1} and L{t+1}.
 
-X_S = partial_trace(self.cache.L{t+1, k} * self.cache.U{t+1, k}, self.system.dimSE, 2);
+X_S = self.cache.g{k};
 temp = self.system.X_final -X_S;
     
 if c < 0

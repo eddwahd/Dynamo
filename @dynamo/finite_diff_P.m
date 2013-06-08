@@ -1,5 +1,5 @@
 function [P, epsilon] = finite_diff_P(self, t, k, c)
-% Computes the propagator P_{t, k} with the control c increased by epsilon.
+% Computes the propagator P_{t, k} with the raw control c increased by epsilon.
 
 % Uses H{t}.
     

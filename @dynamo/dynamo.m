@@ -311,19 +311,21 @@ classdef dynamo < matlab.mixin.Copyable
         end
 
         if nargout == 2
-            % since g (and X?) can be computed using any U and L, it might be
+            % since g can be computed using any U and L, it might be
             % cheaper to set up the gradient first...
             self.gradient_setup(control_mask);
         end
 
         % set up stuff for the error functions
         if isequal(self.config.error_func, @error_full)
-            % _full: X
-            self.cache.U_needed_now(end) = true;
+            % _full:
+            self.cache.g_needed_now = 2; % HACK ln37ae983e
         else
-            % _tr, _abs, _real: g
+            % _tr, _abs, _real:
             self.cache.g_needed_now = true;
         end
+        
+        disp('==========')
         self.cache_refresh(); % this call does the heavy computing (expm etc.)
 
         err_out  = 0;
@@ -349,6 +351,7 @@ classdef dynamo < matlab.mixin.Copyable
             grad = zeros(nnz(control_mask), 1);
             [Ts, Cs] = ind2sub(size(control_mask), find(control_mask));
             for z = 1:length(Ts)
+                fprintf('.');
                 t = Ts(z);
                 c = Cs(z);
                 if c == tau_c
@@ -359,9 +362,7 @@ classdef dynamo < matlab.mixin.Copyable
             % real, normalized, weighted gradient
             grad_out = grad_out +(self.system.weight(k) / self.system.norm2) * real(grad);
         end
-        disp('==============================')
         err_out
-        grad_out
     end
 
     

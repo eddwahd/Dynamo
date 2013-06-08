@@ -18,7 +18,7 @@ classdef cache < matlab.mixin.Copyable
       H_eig_factor  % likewise
       
       %% cell array: g{ensemble_index}
-      g  % trace_S(X_f^\dagger * X(t_n))
+      g  % trace_q(L{k} * U{k}), where q is S or E depending on the error function used.
   end
 
   properties (Access = public)
@@ -28,10 +28,9 @@ classdef cache < matlab.mixin.Copyable
       L_needed_now
       g_needed_now  % scalar
       
-      E         % cached current error value for gradient_*_finite_diff
-      VUdagger  % cached SVD data for error_tr, error_abs (also used by error_real) 
-  
-      int = []  % TEST, integrator
+      E        = NaN  % gradient_*_finite_diff: cached error
+      VUdagger = NaN  % cached SVD data for error_tr, error_abs (also used by error_real) 
+      int  = []   % TEST, integrator
   end
 
   properties (Access = private)
@@ -76,8 +75,6 @@ classdef cache < matlab.mixin.Copyable
           end
 
           self.g = cell(s_ensemble);
-          self.E = NaN;
-          self.VUdagger = NaN;
           
           % Keep track of which objects need re-computation.
           % U{1} and L{end} are never stale and never recomputed.
@@ -182,8 +179,8 @@ classdef cache < matlab.mixin.Copyable
           u_idx = find(U_recompute_now);
           el_idx = fliplr(find(L_recompute_now));
 
-          % loop over the ensemble of systems
-          for k=1:n_ensemble
+      % loop over the ensemble of systems
+      for k=1:n_ensemble
 
           if isequal(self.calcPfromHfunc, @calcP_int)
               % set up stuff in the integrator
@@ -209,16 +206,15 @@ classdef cache < matlab.mixin.Copyable
               % (because a changing tau would invalidate every
               % propagator following it too)
           end
-              % Compute the Hamiltonians
-              for t=h_idx
-                  H = sys.A{k};
-                  for c = 1:n_controls
-                      u = fields(t, c);
-                      H = H +u * sys.B{c, k};
-                  end
-                  self.H{t, k} = H;
+          % Compute the Hamiltonians
+          for t=h_idx
+              H = sys.A{k};
+              for c = 1:n_controls
+                  u = fields(t, c);
+                  H = H +u * sys.B{c, k};
               end
-
+              self.H{t, k} = H;
+          end
 
           % Compute the exp(H) and any other per-H computation which may be needed for the gradient function
           for t=p_idx
@@ -247,20 +243,26 @@ classdef cache < matlab.mixin.Copyable
               end
           end
 
-          % and finally g := trace_S(X_f^\dagger * X(t_n))
+          % and finally g := trace_q(L{g_ind} * U{g_ind})
           if g_recompute_now
-              % TODO combine somehow?
-              if sys.dimSE(2) == 1
-                  % no environment E, full trace, g is a scalar
+              if self.g_needed_now == 2  % HACK ln37ae983e
+                  % error_full, L:s are full propagators, partial trace over E gives X_S
+                  temp = self.L{g_ind, k} * self.U{g_ind, k};
+                  self.g{k} = partial_trace(temp, sys.dimSE, 2);
+              
+              elseif sys.dimSE(2) == 1
+                  % error_abs, error_real, no environment E, full trace, g is a scalar
                   self.g{k} = trace_matmul(self.L{g_ind, k}, self.U{g_ind, k});
+              
               else
-                  % partial trace over S, g is a matrix
+                  % error_tr, partial trace over S, g is a matrix
                   temp = self.L{g_ind, k} * self.U{g_ind, k};
                   self.g{k} = partial_trace(temp, sys.dimSE, 1);
               end
+              % TODO combine last 2 cases somehow?
           end
 
-          end % loop over ensemble
+      end % loop over ensemble
               
           % Mark what has been actually computed
           temp = [1, n_timeslots];

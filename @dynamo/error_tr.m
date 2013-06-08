@@ -9,3 +9,4 @@ err = self.config.f_max -trace(S);
 
 % NOTE assumes S is not singular  
 self.cache.VUdagger = V * U';
+self.cache.E = err;

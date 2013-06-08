@@ -3,9 +3,7 @@ function err = error_full(self, k)
 % k is the ensemble index.
 
 
-% system state at t_n
-temp = self.cache.U{end, k};
+temp = self.cache.g{k} -self.system.X_final;
+err = 0.5 * norm2(temp);
 
-X_S = partial_trace(temp, self.system.dimSE, 2);
-err = 0.5 * norm2(self.system.X_final -X_S);
 self.cache.E = err;
