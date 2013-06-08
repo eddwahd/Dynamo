@@ -23,62 +23,12 @@ fprintf ('If your interests are focued on finding optimal control sequences for 
 fprintf ('However, if you are interested in OC algorithm research, this is the place for you.\n');
 fprintf ('\n\n');
 
-%% Define the physics of the problem - Part 1
-
-nSpins = 2;
-
-%% Preparations
-
-dynamo_structure_init(nSpins); % All definitions are in a global variable called OC
-global OC; % and now we can access it too
-
-SX = [0 1; 1 0];
-SY = [0 -1i; 1i 0];
-SZ = [1 0; 0 -1];
-SI = eye(2)/2;
-
-%% Define the physics of the problem 
-
-OC.config.hamDrift = (1/2) * ( kron(SX,SX) + kron(SY,SY) + kron(SZ,SZ) );              % Drift Hamiltonian
-OC.config.hamControl = {kron(SX,SI), kron(SY,SI), kron(SI,SX), kron(SI,SY)};
-
-OC.config.uInitial = eye(2 ^ nSpins);
-OC.config.uFinal = qft(nSpins);
-
-OC.config.totalTime = 6 * (nSpins-1) / 1; % How much time do we have to drive the system? The value specified here has empirically been shown to work well
-
-switch 'PSU' % Set space for goal function (see paper for discussion)
-    case 'PSU' % "I don't care about global phase"
-        OC.config.normFunc = @PSU_norm;
-        OC.config.gradientNormFunc = @gradient_PSU_norm;
-    case 'SU' % "I care about global phase"
-        OC.config.normFunc = @SU_norm;
-        OC.config.gradientNormFunc = @gradient_SU_norm;
-    otherwise
-        error ('Currently only SU and PSU norms are supported');
-end
-
-% Time-slot configuration. Assumption is of equally-sized timeslots, unless otherwise specified in OC.timeSlots.tau
-OC.timeSlots.nTimeSlots = 500; % Number of timeslices to specify the control fields
-OC.config.controlsInitialScaling = 1;  
-randseed(101); % Optional. Allows the same peudo-random initial controls to be generated on every run (helpful for debugging purposes, for example)
-initial_controls = OC.config.controlsInitialScaling * (rand(OC.timeSlots.nTimeSlots, length(OC.config.hamControl)) - 0.5); % Generate random initial values
-intialize_timeslot_controls (initial_controls);
-controls_mask = true(OC.timeSlots.nTimeSlots, OC.config.numControls); % Which time slots do you want to modify ? All of them
-
-% Final preperatory configuration
-initSetNorm(); % Calculates the norm of the <initial | final> to scale subsequent norms
 
 %% Now some search methods
 
-% Setup ---------------------------------------------------------------------------------
-
-OC.config.gradientFunc = @gradient_exact;
-OC.timeSlots.calcPfromHfunc = @calcPfromH_exact_gradient;
-
 
 % Which time slots do you want to modify ?
-controls_mask = true(OC.timeSlots.nTimeSlots, OC.config.numControls); % All of them
+controls_mask = dyn.full_mask();
 controls_mask(40:45, :) = false; % Keep these at initial random value, for no good reason other than demoing capabilities
 
 % Try various methods ------------------------------------------------------------------
