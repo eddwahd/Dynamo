@@ -21,7 +21,7 @@ else
         dgdu = (g -self.cache.g{k}) / epsilon;
     else
         % at E
-        E = self.config.f_max -trace(svd(g));
+        E = self.config.f_max -sum(svd(g));
         ret = (E -self.cache.E) / epsilon;
         return
     end
