@@ -134,10 +134,13 @@ classdef control_seq < matlab.mixin.Copyable
 
 
     function ret = inv_transform(self, fields)
-    % Given a set of control field values (optionally tau as the
-    % last column), returns the corresponding raw controls.
+    % Given an array of control field values (columns corresponding
+    % to different fields, not including tau), returns the corresponding raw controls.
 
         n_controls = self.n_controls();
+        if size(fields, 2) ~= n_controls
+            error('Wrong number of control fields.')
+        end
 
         ret = zeros(size(fields));
         for k=1:n_controls
@@ -163,16 +166,21 @@ classdef control_seq < matlab.mixin.Copyable
                 error('Unknown control type.')
             end
         end
-        
-        tau_c = n_controls + 1;
-        if size(fields, 2) == tau_c
-            % tau control
-            ret(:, tau_c) =  acos(1 -(fields(:, tau_c) -self.tau_par(:,1)) .* (2./self.tau_par(:,2)));
-            if any(imag(ret(:, tau_c)))
-                warning('taus not within the parameter limits.')
-                crap = imag(ret(:, tau_c))
-                ret(:, tau_c) = real(ret(:, tau_c));
-            end
+    end
+
+    
+    function ret = inv_transform_tau(self, tau)
+    % Given a column vector of tau values returns the corresponding raw tau controls.
+    
+        if size(tau, 1) ~= self.n_timeslots()
+            error('Wrong number of time slots.')
+        end
+
+        ret = acos(1 -(tau -self.tau_par(:,1)) .* (2 ./ self.tau_par(:,2)));
+        if any(imag(ret))
+            warning('Some taus not within the parameter limits.')
+            crap = imag(ret)
+            ret = real(ret);
         end
     end
     

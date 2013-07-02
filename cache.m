@@ -189,8 +189,8 @@ classdef cache < matlab.mixin.Copyable
               temp = 1:2:n_controls;
               x = fields(:, temp);
               y = fields(:, temp+1);
-              self.int.amp = sqrt(x.^2 +y.^2);
-              self.int.phi = atan2(y, x);
+              self.int.amp(:,1:n_controls/2) = sqrt(x.^2 +y.^2);
+              self.int.phi(:,1:n_controls/2) = atan2(y, x);
               
               % tau
               self.int.tau = tau;

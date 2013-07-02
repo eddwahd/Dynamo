@@ -27,5 +27,11 @@ for k=1:2:2*n_controls
     f(:, k+1) = amp .* sin(phi);
 end
 
-self.update_controls([f, tau], [], true);
+% reverse transform into raw control parameters
+f   = self.seq.inv_transform(f);
+tau = self.seq.inv_transform_tau(tau);
+
+% store into Dynamo
+self.seq.set([f, tau]);
+self.cache.invalidate(); % flush the entire cache
 end

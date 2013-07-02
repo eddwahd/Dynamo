@@ -325,7 +325,6 @@ classdef dynamo < matlab.mixin.Copyable
             self.cache.g_needed_now = true;
         end
         
-        disp('==========')
         self.cache_refresh(); % this call does the heavy computing (expm etc.)
 
         err_out  = 0;
@@ -337,6 +336,7 @@ classdef dynamo < matlab.mixin.Copyable
 
             % weighted
             err_out = err_out +self.system.weight(k) * err;
+            fprintf('Error: %g\n', err_out);
             if nargout < 2
                 % just the error
                 continue
@@ -362,11 +362,11 @@ classdef dynamo < matlab.mixin.Copyable
             % real, normalized, weighted gradient
             grad_out = grad_out +(self.system.weight(k) / self.system.norm2) * real(grad);
         end
-        err_out
+        %fprintf('Error: %g\n', err_out);
     end
 
     
-    function update_controls(self, raw, control_mask, transformed)
+    function update_controls(self, raw, control_mask)
     % Updates selected controls.
     %
     %  raw: vector of raw, untransformed control values, control_mask: corresponding mask.
@@ -375,13 +375,7 @@ classdef dynamo < matlab.mixin.Copyable
     %  Makes the changed timeslots and stuff that depends on them stale.
 
         old = self.seq.get();
- 
-        % transformed coords instead of raw ones?
-        if nargin == 4 && transformed
-            raw = self.seq.inv_transform(raw);
-            control_mask = []; % always full
-        end
-        
+         
         if nargin < 3 || isempty(control_mask)
             control_mask = true(size(old)); % full mask
         end
@@ -394,7 +388,6 @@ classdef dynamo < matlab.mixin.Copyable
         changed_t_mask = any(new ~= old, 2);
 
         if any(changed_t_mask)
-            disp('controls changed')
             % actually update the controls
             self.seq.set(new);
             self.cache.mark_as_stale(changed_t_mask);
