@@ -5,7 +5,7 @@ classdef dynamo < matlab.mixin.Copyable
 % sequence, various options and statistics. This class glues together
 % the functionality of the cache, qsystem and control classes.
 %
-% Governing equation: \dot(X)(t) = -(A +\sum_k u_k(t) B_k) X(t) = -G(t) X(t)
+% Governing equation: \dot(X)(t) = (A +\sum_k u_k(t) B_k) X(t) = G(t) X(t)
     
 % Shai Machnes   2010-2011
 % Ville Bergholm 2011-2013
@@ -98,12 +98,38 @@ classdef dynamo < matlab.mixin.Copyable
         
         out = 'Target operation:';
         switch system_str
-          case {'s'}
-            %% Closed system
+          case 'abstract'
+            %% No transformations done on the A and B operators. 
+            % the generator may be anything, hence error_full
             if nargin == 6
                 error('L_drift not used in closed systems.')
             end
+
+            out = strcat(out, ' abstract ');
+            
+            if strcmp(task_str, 'vector')
+                out = strcat(out, 'vector transfer\n');
+                if any(input_rank ~= 1)
+                    error('Initial and final states should be vectors.')
+                end
+            else
+                out = strcat(out, 'matrix operation\n');
+                if any(input_rank == 1)
+                    error('Initial and final states should be matrices.')
+                end
+            end
+            sys.abstract_representation(initial, final, H_drift, H_ctrl);
+            config.error_func = @error_full;
+            config.gradient_func = @gradient_full_finite_diff;
+            config.epsilon = 1e-4;
+            
+          
+          case {'s'}
+            %% Closed system
             % the generator is always Hermitian and thus normal => use exact gradient
+            if nargin == 6
+                error('L_drift not used in closed systems.')
+            end
 
             switch task_str
               case 'state'
@@ -516,7 +542,7 @@ classdef dynamo < matlab.mixin.Copyable
                 
                 n_steps = ceil(tau / dt); % at least one point per timeslot
                 step = tau / n_steps;
-                P = expm(-step * G);
+                P = expm(step * G);
                 for q = 1:n_steps
                     X = P * X;
                     res(end+1, :) = state_probs(X);

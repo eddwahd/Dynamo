@@ -22,7 +22,13 @@ classdef qsystem < matlab.mixin.Copyable
     control_labels = {} % names for the controls
   end
 
-  
+  methods (Static)
+      function ret = check_hamiltonian(H)
+      % Returns true if H is a valid Hamiltonian.
+          ret = (norm(H -H') < 1e-10);
+      end
+  end
+
   methods (Access = private)
     function set_dim(self, i, f)
     % Set up the Hilbert space dimensions.
@@ -44,15 +50,18 @@ classdef qsystem < matlab.mixin.Copyable
         self.A = cell(1, 1);
         self.B = cell(n_controls, 1);
 
-        self.A{1} = -L_drift +1i*comm(H_drift);
+        self.A{1} = L_drift -1i*comm(H_drift);
         self.B_is_Hamiltonian = true(1, n_controls);
 
         for k=1:n_controls
             % check for Liouvillian controls
             if length(H_ctrl{k}) == self.dim
-                self.B{k, 1} = 1i*comm(H_ctrl{k}); % Hamiltonian
+                if ~self.check_hamiltonian(H_ctrl{k})
+                    error('Control Hamiltonian %d is not hermitian.', k)
+                end
+                self.B{k, 1} = -1i*comm(H_ctrl{k}); % Hamiltonian
             else
-                self.B{k, 1} = -H_ctrl{k}; % Liouvillian
+                self.B{k, 1} = H_ctrl{k}; % Liouvillian
                 self.B_is_Hamiltonian(k) = false;
             end
         end
@@ -68,10 +77,16 @@ classdef qsystem < matlab.mixin.Copyable
         self.A = cell(1, 1);
         self.B = cell(n_controls, 1);
         
-        self.A{1} = 1i * H_drift;
+        if ~self.check_hamiltonian(H_drift)
+            error('The drift Hamiltonian is not hermitian.')
+        end
+        self.A{1} = -1i * H_drift;
         self.B_is_Hamiltonian = true(1, n_controls);
         for k=1:n_controls
-            self.B{k, 1} = 1i * H_ctrl{k};
+            if ~self.check_hamiltonian(H_ctrl{k})
+                error('Control Hamiltonian %d is not hermitian.', k)
+            end
+            self.B{k, 1} = -1i * H_ctrl{k};
         end
         self.weight = 1;
         %self.M = inprod_B(self.B);
@@ -88,10 +103,40 @@ classdef qsystem < matlab.mixin.Copyable
             % FIXME what about dissipative controls? superoperators?
         end
     end
+  
+    function abstract_gens(self, A, B)
+    % Set up abstract vector space generators for a system.
+
+        n_controls = length(B);
+        self.A = cell(1, 1);
+        self.B = cell(n_controls, 1);
+        
+        self.A{1} = A;
+        self.B_is_Hamiltonian = true(1, n_controls);
+        for k=1:n_controls
+            self.B{k, 1} = B{k};
+        end
+        self.weight = 1;
+    end
   end
   
   
   methods
+    function abstract_representation(self, i, f, A, B)
+    % X_ are Hilbert space objects (vectors or matrices).
+        
+        self.liouville = false;
+        self.set_dim(i, f);
+        self.X_initial = i;
+        self.X_final = f;
+        
+        % Calculate the squared norm |X_final|^2 to scale the fidelities with.
+        % We use the Hilbert-Schmidt inner product (and the induced Frobenius norm) throughout the code.
+        self.norm2 = norm2(self.X_final);
+        self.abstract_gens(A, B);
+    end
+
+      
     function hilbert_representation(self, i, f, H_drift, H_ctrl, enlarge_f)
     % X_ are Hilbert space objects (kets or operators).
     % closed system: state, ket, gate, gate_partial, (TODO state_partial)

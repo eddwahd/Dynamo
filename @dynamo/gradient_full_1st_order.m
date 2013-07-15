@@ -1,13 +1,13 @@
 function ret = gradient_full_1st_order(self, t, k, c)
 % Gradient of error_full by first order approximation.
 
-% dP_k/du_c \approx (-B_c * dt_k) * P_k
+% dP_k/du_c \approx (B_c * dt_k) * P_k
 % Exact if G_k commutes with B_c.
 %
 % Uses H{t}, U{t+1} and L{t+1}.
 
 X_S = self.cache.g{k};
-temp = self.system.X_final -X_S;
+temp = X_S -self.system.X_final;
     
 if c < 0
     % tau control, exact

@@ -7,8 +7,8 @@ classdef cache < matlab.mixin.Copyable
 
   properties (SetAccess = private)
       %% cell arrays: Q{timeslice, ensemble_index}
-      H  % Generator for a time slice.
-      P  % Propagator for a time slice, computed by calcPfromHfunc. With a constant H, P == expm(-dt * H). 
+      H  % Generator for a time slice. Not just the Hamiltonian, see below.
+      P  % Propagator for a time slice, computed by calcPfromHfunc. With a constant H, P == expm(dt * H). 
       U  % Forward propagators. U{k+1} = P{k} * U{k}
          % U{k} is the system at t = sum(tau(1:(k-1))) = t_{k-1}
       L  % Backward propagators. L{k-1} = L{k} * P{k-1};
@@ -184,18 +184,9 @@ classdef cache < matlab.mixin.Copyable
 
           if isequal(self.calcPfromHfunc, @calcP_int)
               % set up stuff in the integrator
-              
-              % control fields
-              temp = 1:2:n_controls;
-              x = fields(:, temp);
-              y = fields(:, temp+1);
-              self.int.amp(:,1:n_controls/2) = sqrt(x.^2 +y.^2);
-              self.int.phi(:,1:n_controls/2) = atan2(y, x);
-              
-              % tau
-              self.int.tau = tau;
-              self.int.comp();
-              
+
+              self.int.import_better(tau, fields, false, true);
+
               % integrate props.
               
               % TODO FIXME crosstalk makes all gradients except the
@@ -289,16 +280,16 @@ classdef cache < matlab.mixin.Copyable
       % Computes P{t, k} using the eigendecomposition, stores some
       % extra stuff for cheap exact gradient computation later on.
 
-          minus_dt_H = -dt * self.H{t, k};
-          %N = length(minus_dt_H);
+          dt_H = dt * self.H{t, k};
+          %N = length(dt_H);
 
-          %% Compute the eigenvalue factors and eigenvectors of -dt*H
+          %% Compute the eigenvalue factors and eigenvectors of dt*H
 
-          [v, zeta, exp_d] = eig_factors(minus_dt_H, true);
+          [v, zeta, exp_d] = eig_factors(dt_H, true);
           self.H_v{t, k} = v;
           self.H_eig_factor{t, k} = zeta;
 
-          %% And finally expm(-dt*H) using the eigendecomposition
+          %% And finally expm(dt*H) using the eigendecomposition
 
           ret = v * diag(exp_d) * v';
       end
@@ -306,7 +297,7 @@ classdef cache < matlab.mixin.Copyable
 
       function ret = calcP_expm(self, t, k, dt)
       % Computes P{t, k} using expm.
-          ret = expm(-dt * self.H{t, k});
+          ret = expm(dt * self.H{t, k});
       end
 
 

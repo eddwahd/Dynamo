@@ -1,7 +1,7 @@
 function ret = gradient_g_1st_order(self, t, k, c)
 % Gradient of the auxiliary function g by first order approximation.
 
-% dP_k/du_c \approx (-B_c * dt_k) * P_k
+% dP_k/du_c \approx (B_c * dt_k) * P_k
 % Exact if G_k commutes with B_c.
 %
 % Uses H{t}, U{t+1} and L{t+1}.
@@ -16,4 +16,4 @@ else
     ret = self.seq.tau(t) * self.seq.fields_deriv(t, c) * trace_matmul(self.cache.L{t+1, k}, self.system.B{c, k} * self.cache.U{t+1, k});
 end
 
-ret = ret * self.cache.VUdagger;
+ret = -ret * self.cache.VUdagger;
