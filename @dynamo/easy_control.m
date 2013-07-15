@@ -24,18 +24,27 @@ end
 
 %% Set initial control values
 
-% tau controls
-tau_c = acos(0) * ones(t_shape); % halfway
+% FIXME HACK
+if iscell(fields)
+    tau_c = self.seq.inv_transform_tau(fields{2});
+    fields = fields{1};
+else
+    % tau controls
+    tau_c = acos(0) * ones(t_shape); % halfway
+end
+
 
 if ~isempty(fields)
     % constant initial controls
 
     if isscalar(fields)
-        fields = fields * ones(1, n_controls);
+        fields = fields * ones(c_shape);
     end
     % now fields should be a row vector, one value for each control field
+    qqq = size(fields, 1);
     
     raw = self.seq.inv_transform(fields);
+    if qqq == 1
     if ~t_dependent
         % perturb each control field randomly
         raw = raw +rel_rand * raw .* randn(c_shape) +abs_rand * randn(c_shape);
@@ -45,10 +54,12 @@ if ~isempty(fields)
         raw = ones(t_shape) * raw;
         raw = raw +rel_rand * raw .* randn(f_shape) +abs_rand * randn(f_shape);
     end
+    end
 else
     % Generate totally random initial controls
     raw = randn(f_shape);
 end
+
 
 self.seq.set([raw, tau_c]);
 self.cache.invalidate(); % flush the entire cache

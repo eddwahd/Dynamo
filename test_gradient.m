@@ -30,13 +30,14 @@ function [d, direction] = test_gradient(d, direction)
 
 if nargin < 1
     d = test_suite(21);
+    d.easy_control({d.seq.fields, d.seq.tau+0.01*randn(size(d.seq.tau))});
 end
    
 
 %% choose an error function and a compatible gradient
 
-ff = 'full'
-gg = 'diff'
+ff = 'tr'
+gg = 'exact'
 
 ttt = ['error\_', ff, ', gradient\_', gg];
 switch ff
@@ -86,7 +87,7 @@ d.config.epsilon = 1e-3;
 
 %% test the accuracy
 
-mask = d.full_mask(false);
+mask = d.full_mask(true);
 
 % save the initial controls
 x0 = d.seq.get(mask);
