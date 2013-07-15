@@ -14,7 +14,7 @@ classdef cache < matlab.mixin.Copyable
       L  % Backward propagators. L{k-1} = L{k} * P{k-1};
          % L{k} is the adjoint system at t = sum(tau(1:(k-1))) = t_{k-1}
 
-      H_v           % eigendecomposition data for -dt*H, updated when P is updated  
+      H_v           % eigendecomposition data for dt*H, updated when P is updated  
       H_eig_factor  % likewise
       
       %% cell array: g{ensemble_index}
