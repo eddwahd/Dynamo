@@ -1,0 +1,257 @@
+-TU, animate for all tasks
+
+
+papers to publish:
+- Plenio: pulsed dephasing for excitons / fcn, simple nonmarkovian stuff
+- DYNAMO v2
+
+
+
+TODO:
+- construct a case where time-dependent dephasing control gives much
+  better exciton transport results than optimized constant control.
+
+
+-Fedor: measurement state transfer, "CNOT/2": |00>_{System,Probe}->|00>, |10>->|11>, rest arbitrary
+- NV center stuff / engineered fp's
+- NV: spin bath -mediated coupling/entanglement/FP
+- NV: cavity/waveguide coupling
+- NR algorithm for Dynamo
+
+
+-Dualities: for a CPP \hat{\Omega} is \ge 0 and thus hermitian, what
+ is \tilde{\Omega} then?
+
+=================================================================================
+
+
+=================================================================================
+REACHABILITY:
+
+
+2012-06-28
+-Unitary state transfer: can noise provide a shortcut?
+-Limited U-controllability: can noise extend the reachable set? yes,
+ consider 1q with z rotations and ampdamp noise. more?
+-Theorem 1 with noise that cannot be fully switched off?
+-infinitesimal evolutions with bitflip => majorization?
+ This would mean that the reachable set in Th. 2 is maximal, and would
+ immediately yield \Delta P <= 0.
+
+
+18.4.2012
+test_gradient generalized, expected results for gradient_g* funcs as
+well as 
+
+
+
+16.4.2012
+-Model system: two qubits, zz interaction, local xy controls on both (fully controllable). Markovian noise.
+-purity monotonically decreases <=> noise is unital
+-2q, const unital noise on A, controllable ampdamp on B, random state
+ transfer, can B counteract A?
+
+ini, fin = rand_pos(4), A = dephasing, increase purity: yes, to very small error, ampdamp clearly needed, no success without.
+A = isotropic depolarization seems to be much harder but still works to some extent
+
+
+
+
+12.4.2012
+-three qubits, linear chain, zz interaction, noise on C:
+- unitary orbit test:
+
+
+
+
+3.4.2012
+-purity change test with coherent transfer/swap:
+ini = rand_pos(2) * I
+fin = rand_pos(2) * I
+
+dephasing or depolarizing noise on B: (unital!)
+purity decreases: ok, noise pulses lower purity as expected
+purity increases: nope, also noise levels always minimized (purely detrimental)
+
+ampdamp noise on B:
+purity decreases: ok, noise pulses can lower purity
+purity increases: usually ok, sometimes tough optimization as noise
+is first almost made to vanish and finally reintroduced
+
+
+-unitary orbit: constant purity, can be done without noise, but can noise be useful?
+ini = rand_pos(4)
+fin = SU(4) rotation of ini
+T = 8
+
+ampdamp noise on B: sometimes used
+dephasing on B: almost never used
+depolarization on B: practically never used
+
+
+
+
+
+
+
+- try to find nontrivial, useful noise controls.
+  state transfer to |0>, controllable damping, noncontrollable
+  depolarization
+
+
+=================================================================================
+Muschik entanglement generation
+
+
+14.2.2012
+- there is no Hamiltonian that commutes with Muschik kappa>>1 FP but
+  not with the corresponding quasi-FP. Reason: their non-identity components are
+  proportional to one another.
+
+
+9.11.2011
+
+-Freedom/nonuniqueness in choosing Lindblad generators
+-Go for a triplet state FP. Effect of different H:s, form of L gens.
+-Can one get a nonlocal fixed point using linear combinations of local
+ ops as L generators? In the Muschik system yes, in 2q?
+-Construct the most general local Lindblad gens (+non-unital...)
+-FP:s as a control problem: noise controls, state transfer from random
+ initial states to FP, average over many initial states.
+
+
+-existence of local minima in open systems? lots.
+
+
+Given a drift H, what limitations does it place on the potential fixed
+point set we obtain by engineering Lindblad ops? What if we require a
+completely pure fixed point?
+
+
+
+Lindblad FP code:
+try to generate systems where exp(t*L) has strong transient polynomial
+behavior, i.e. L is not diagonalizable. Jordan vs. Schur decomposition?
+
+
+two qubits: Muschik system
+
+using coherent control to manipulate fixed points.
+keeping away from the attractor as long as possible using control
+shifting the fixed point
+speeding up the convergence to the FP
+
+
+block-diagonal H -> L?
+
+
+
+qubit, z drift, very strong x control, depolarizing noise,
+controllable relaxation to zero: reachable set given initial state?
+fixed points? target just outside reachable set, set of optimal points
+(for different initial states)
+
+
+
+
+
+
+
+=================================================================================
+FMO:
+
+30.3.2012
+
+-fmo7:  T   none    const
+        1   0.315   0.651
+        2   0.446   0.880
+        5   0.552   0.991
+     1000   0.823   0.995
+
+-fmo8:   T   none      const
+         1   0.00371   0.499
+         2   0.00702   0.791
+         5   0.0147    0.975
+      1000   0.188     0.993
+
+
+
+
+
+2012-03-29:
+-fmo8: transfer_inf = 0.1883, transfer_1000 = 0.1881,
+transfer_1000_const = 0.993
+
+2012-01-30:
+- Replicated Plenio's FMO results (with small relative errors...)
+- overdamping the coherent oscillations with dephasing seems to be the key
+
+
+2012-01-19:
+Plenio_Huelga_2008
+Fig. 3: 3 spin chain, variable dephasing on site 2, numerically optimal result
+is slightly different from constant \gamma = 2.8.
+
+Fig 2:, \omega_2 = 1.6, difference is much more pronounced...? or is it?
+
+Both cases, dephasing on sites 1 and 3 seems worthless, as does relaxation
+
+
+FMO: most general noise that conserves excitation number?
+strictly exciton-destroying noise process? (only include 0 and 1
+manifolds in the computation)
+engineer a fixed point at sink site by optimizing noise?
+polynomial-time incursions to higher excitation manifolds?
+
+
+
+=================================================================================
+Exciton transport with pulsed dephasing
+
+
+8.2.2012
+- uniform fully connected network, n=7: again we get pulsed dephasing on
+  initial and final sites to block destructive interference. 30%-unit
+  improvement over const dephasing.
+
+3.2.2012
+- 3chain with 3 dephasing controls: synchronous sharp spikes on
+ "important" sites, broad lobes on nonimportant one
+
+
+2.2.2012
+- assuming spin-1/2 systems from now on
+- XX, YY and ZZ all commute
+- ZZ is diagonal (real, exciton number preserving!)
+- most general two-qubit interaction A which preserves exciton number:
+  must have [A, 1*n + n*1] = 0 => A is block-diagonal with block sizes 1,2,1.
+  For a Hermitian A the corresponding basis vectors are
+  {11, 1Z, Z1, ZZ, XX+YY, XY-YX}
+
+- (XX+YY)/2 = PM+MP, (XY-YX)/2 = i*(PM-MP),  XX+YY gives a real H, XY-YX an imaginary one.
+
+- in the 0+1 manifold a local dephasing operator damps all the
+  coherences in which the site is a party.
+- preventing a coherence formation also prevents exciton transfer
+- (XX+YY:Im or XY-YX:Re part of) coherence is proportional to time derivative of population
+
+- collapsing a coherence stops the transfer, further coherent
+  oscillation is limited between the current populations
+
+- moderate constant dephasing:?
+
+- hard pulsed dephasing: "ratchet mechanism" for pop transfer from
+  site 1 to 2. Quickly kills the coherence when the direction of the
+  pop flow is about to change. Slightly modified by relaxation, 2-3 interaction etc.
+
+
+9.1.2012
+-pulsed dephasing control sequence
+
+
+21.12.2011
+-Successfully replicated spin chain exciton simulation results from Plenio&Huelga
+
+
+
+
