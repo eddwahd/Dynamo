@@ -8,7 +8,7 @@ classdef dynamo < matlab.mixin.Copyable
 % Governing equation: \dot(X)(t) = (A +\sum_k u_k(t) B_k) X(t) = G(t) X(t)
     
 % Shai Machnes   2010-2011
-% Ville Bergholm 2011-2013
+% Ville Bergholm 2011-2014
 
 
   properties
@@ -26,7 +26,7 @@ classdef dynamo < matlab.mixin.Copyable
   methods (Static)
     function ret = version()
     % Returns the current DYNAMO version.
-        ret = '1.3 alpha16';
+        ret = '1.4.0 alpha1';
     end
 
 

@@ -1,18 +1,18 @@
 classdef control_seq < matlab.mixin.Copyable
 % Copyable handle class for control sequences.
 
-% Ville Bergholm 2011-2012
+% Ville Bergholm 2011-2014
 
   properties
-    tau_par
-    control_type
-    control_par
+      tau_par        % parametrization of tau, Q[n_timeslots, 1:2]
+      control_type   % char array denoting the control type, Q[n_controls]
+      control_par    % cell array of control parameter structs, Q{n_controls}
 
-    raw
-    tau
-    tau_deriv
-    fields
-    fields_deriv
+      raw            % untransformed control fields, last column is for tau: Q[n_timeslots, n_controls + 1]
+      tau            % timeslice duration, Q[timeslice]
+      tau_deriv      % d tau / d tau_raw
+      fields         % transformed control fields, Q[n_timeslots, n_controls]
+      fields_deriv   % d fields / d fields_raw
   end
 
   methods
