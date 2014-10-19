@@ -102,7 +102,7 @@ classdef dynamo < matlab.mixin.Copyable
             %% No transformations done on the A and B operators. 
             % the generator may be anything, hence error_full
             if nargin == 6
-                error('L_drift not used in closed systems.')
+                error('L_drift not used in abstract systems.')
             end
 
             out = strcat(out, ' abstract ');
