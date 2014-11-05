@@ -16,10 +16,10 @@ w = exp(2 * pi * 1i / N);
 
 row = 0:N-1;
 
-for r = 1:N
-   m(r,:) = row*(r-1);
-end
-
-m = w .^ m;
+% ed's first commit
+m2 = repmat(row',1,N);
+m3 = repmat(row,N,1);
+m = m2.*m3;
+m = w .^m;
 
 m = m / sqrt(N);
