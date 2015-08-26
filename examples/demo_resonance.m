@@ -42,7 +42,7 @@ control_par = {[-1,2]};
 
 % pure state transfer
 initial = [1 0]';
-final = [0 1]';
+final = [1 1]';
 
 dyn = dynamo('closed ket', initial, final, H_drift, H_ctrl);
 dyn.system.set_labels('Single-qubit resonant driving demo.', dim, c_labels);
@@ -51,7 +51,7 @@ dyn.system.set_labels('Single-qubit resonant driving demo.', dim, c_labels);
 %% Initial controls
 
 % random initial controls
-T = 6;
+T = 12;
 dyn.seq_init(201, T * [1, 0], control_type, control_par);
 dyn.easy_control(0, 0, 1, false);
 
